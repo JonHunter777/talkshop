@@ -57,3 +57,27 @@ PLAN.md — AI-магазин
 [ ] Голосовой ввод в чате
 Журнал
 Сюда оркестратор записывает после каждого этапа: дата, что сделано, что осталось, открытые вопросы.
+
+### 2026-11-12 — Этап 0, промежуточный итог (шаги 0–2 из 10)
+Остановились перед шагом 3. Ни один пункт чек-листа этапа 0 целиком не закрыт. Коммитов нет, все изменения в рабочей копии.
+
+**Сделано**
+- Шаг 0: `.claude/settings.JSON` → `settings.json`; агенты `arxitect.md` → `architect.md`, `backed.md` → `backend-dev.md`, `frond-end.md` → `frontend-dev.md` (через `git mv`). В `deny` вместо `Read(./.env.*)` конкретные имена (`.env.local/.development/.production/.test`), чтобы `.env.example` читался. `.nvmrc` = `24`.
+- Шаг 1 (devops): расширен `.gitignore` (с `!.env.example`), добавлены `.editorconfig`, `.gitattributes` (LF), минимальный `README.md`.
+- Шаг 2 (backend-dev): `backend/` создан через `nest new --skip-git --package-manager npm`. Nest CLI 12 сгенерировал Vitest + oxlint + ESM, что не совпадает с CLAUDE.md, поэтому по решению разработчика backend переведён на **Jest + ESLint (CommonJS)**. Для этого Nest откатили с 12 на **11** (пакеты Nest 12 ESM-only, Jest в CJS их не грузит). TypeScript 6, `strict: true` полностью, `module`/`moduleResolution: nodenext` (пакет остаётся CJS, без `"type": "module"`).
+- Проверено оркестратором: build, test (1/1), test:e2e (1/1), lint — зелёные. `dist/` собирается после удаления устаревшего `tsconfig.build.tsbuildinfo`.
+
+**Решения разработчика**
+- Tailwind v4; Vitest во frontend ставим сейчас (один smoke-тест); npm без pnpm/yarn; `.env.example` — по файлу в `backend/` и `frontend/`; на заглушке показываем статус API; проект не в OneDrive; origin на GitHub уже настроен.
+- Atlas: кластер создаёт разработчик сам. `backend/.env` пока не создан.
+
+**Осталось (этап 0)**
+- Шаг 3: `@nestjs/config` с валидацией env, Mongoose, префикс `api`, `ValidationPipe`, CORS, модуль health (200 с `db: up` или 503) + тесты. Нужны пакеты `@nestjs/config`, `@nestjs/mongoose`, `mongoose`, `class-validator`, `class-transformer` — ждём согласия.
+- Шаг 4: Swagger на `/api/docs`, только вне production. Шаг 5: ESLint/Prettier в backend (ужесточить `no-explicit-any`, `no-floating-promises`; сейчас правила как в шаблоне Nest, `any` выключен, floating-promises — warn), скрипты lint/format.
+- Шаги 6–8: frontend (Vite react-ts, Tailwind v4, Vitest, заглушка со статусом API, `VITE_API_URL`), ESLint/Prettier во frontend, `.env.example` в обеих частях и сквозная проверка.
+- Шаги 9–10: code-reviewer, `/pre-commit`, коммит и push делает разработчик; затем отметить пункты этапа 0.
+
+**Открытые вопросы / долги**
+- Создать кластер Atlas и `backend/.env` (`MONGODB_URI` с базой вроде `ai-shop-dev`) до проверки health на реальной базе.
+- Сгенерированные `backend/AGENTS.md` и `backend/README.md` упоминают vitest/oxlint — поправить `docs-writer` в конце этапа.
+- Когда выйдет TypeScript 7 / появится нужда в Nest 12 — отдельно решать миграцию (Nest 11 выбран сознательно).
