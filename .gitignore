@@ -1,5 +1,33 @@
-
+# Dependencies
 node_modules
+
+# Build output
 dist
+build
+coverage
+*.tsbuildinfo
+
+# Environment (never commit secrets; the example file is tracked)
 .env
+.env.*
+!.env.example
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea
+.vscode
+
+# Test artifacts
+playwright-report
+test-results
+
+# Claude Code local settings (the rest of .claude/ is tracked)
 .claude/settings.local.json
