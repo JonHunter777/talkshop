@@ -64,7 +64,15 @@
       "Bash(vercel:*)",
       "Bash(railway:*)",
       "Bash(render:*)",
-      "Bash(npm publish:*)"
+      "Bash(npm publish:*)",
+      "Bash(taskkill /IM:*)",
+      "Bash(taskkill //IM:*)",
+      "Bash(taskkill /F /IM:*)",
+      "Bash(taskkill //F //IM:*)",
+      "Bash(taskkill /f /im:*)",
+      "Bash(taskkill //f //im:*)",
+      "Bash(pkill:*)",
+      "Bash(killall:*)"
     ]
   }
 }

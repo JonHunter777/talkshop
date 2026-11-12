@@ -2,6 +2,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { setupSwagger } from './swagger.setup';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -16,6 +17,7 @@ async function bootstrap() {
     }),
   );
   app.enableCors({ origin: config.getOrThrow<string>('CORS_ORIGIN') });
+  setupSwagger(app, config.getOrThrow<string>('NODE_ENV') !== 'production');
 
   await app.listen(config.getOrThrow<number>('PORT'));
 }
