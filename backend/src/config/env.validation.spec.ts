@@ -28,4 +28,49 @@ describe('validateEnv', () => {
     expect(message).toMatch(/NODE_ENV/);
     expect(message).not.toContain('topsecret');
   });
+
+  describe('edge cases', () => {
+    const fakeUri = 'mongodb://user:secret-pass@host/db';
+
+    function getErrorMessage(config: Record<string, unknown>): string {
+      try {
+        validateEnv(config);
+      } catch (e) {
+        return (e as Error).message;
+      }
+      return '';
+    }
+
+    it.each(['abc', '0', '70000', '-1', '3000.5'])(
+      'rejects invalid PORT %s and does not leak the URI',
+      (port) => {
+        const message = getErrorMessage({ MONGODB_URI: fakeUri, PORT: port });
+        expect(message).toMatch(/PORT/);
+        expect(message).not.toContain('secret-pass');
+        expect(message).not.toContain(fakeUri);
+      },
+    );
+
+    it('throws when MONGODB_URI is an empty string', () => {
+      const message = getErrorMessage({ MONGODB_URI: '' });
+      expect(message).toMatch(/MONGODB_URI/);
+    });
+
+    it('throws when CORS_ORIGIN is an empty string and does not leak the URI', () => {
+      const message = getErrorMessage({ MONGODB_URI: fakeUri, CORS_ORIGIN: '' });
+      expect(message).toMatch(/CORS_ORIGIN/);
+      expect(message).not.toContain('secret-pass');
+    });
+
+    it.each(['development', 'production', 'test'])('accepts NODE_ENV %s', (nodeEnv) => {
+      const env = validateEnv({ MONGODB_URI: fakeUri, NODE_ENV: nodeEnv });
+      expect(env.NODE_ENV).toBe(nodeEnv);
+    });
+
+    it('rejects NODE_ENV staging and does not leak the URI', () => {
+      const message = getErrorMessage({ MONGODB_URI: fakeUri, NODE_ENV: 'staging' });
+      expect(message).toMatch(/NODE_ENV/);
+      expect(message).not.toContain('secret-pass');
+    });
+  });
 });
