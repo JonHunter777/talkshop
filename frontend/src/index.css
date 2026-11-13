@@ -1,25 +1,25 @@
 /* IBM Plex Sans, weights 400/500/600 (DESIGN.md section 3), Cyrillic + Latin, self-hosted */
-@import "@fontsource/ibm-plex-sans/cyrillic-400.css";
-@import "@fontsource/ibm-plex-sans/cyrillic-500.css";
-@import "@fontsource/ibm-plex-sans/cyrillic-600.css";
-@import "@fontsource/ibm-plex-sans/latin-400.css";
-@import "@fontsource/ibm-plex-sans/latin-500.css";
-@import "@fontsource/ibm-plex-sans/latin-600.css";
+@import '@fontsource/ibm-plex-sans/cyrillic-400.css';
+@import '@fontsource/ibm-plex-sans/cyrillic-500.css';
+@import '@fontsource/ibm-plex-sans/cyrillic-600.css';
+@import '@fontsource/ibm-plex-sans/latin-400.css';
+@import '@fontsource/ibm-plex-sans/latin-500.css';
+@import '@fontsource/ibm-plex-sans/latin-600.css';
 
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
-  --color-sand: #EDE8E0;
-  --color-paper: #F7F4EF;
-  --color-line: #D9D3C7;
-  --color-stone: #8A847A;
-  --color-ink: #2B2B2B;
-  --color-olive: #6B6B47;
-  --color-olive-dark: #55553A;
-  --color-clay: #A3452F;
-  --color-moss: #4F6B4A;
+  --color-sand: #ede8e0;
+  --color-paper: #f7f4ef;
+  --color-line: #d9d3c7;
+  --color-stone: #8a847a;
+  --color-ink: #2b2b2b;
+  --color-olive: #6b6b47;
+  --color-olive-dark: #55553a;
+  --color-clay: #a3452f;
+  --color-moss: #4f6b4a;
 
-  --font-sans: "IBM Plex Sans", ui-sans-serif, sans-serif;
+  --font-sans: 'IBM Plex Sans', ui-sans-serif, sans-serif;
 
   --radius-sm: 2px;
   --radius-md: 4px;
