@@ -65,4 +65,24 @@ describe('App: API status', () => {
 
     expect(await screen.findByText('API: недоступен')).toBeInTheDocument();
   });
+
+  it('shows "API: недоступен" immediately and does not call fetch when VITE_API_URL is not set', () => {
+    vi.stubEnv('VITE_API_URL', undefined);
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+    render(<App />);
+
+    expect(screen.getByText('API: недоступен')).toBeInTheDocument();
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('shows "API: недоступен" immediately and does not call fetch when VITE_API_URL is an empty string', () => {
+    vi.stubEnv('VITE_API_URL', '');
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+    render(<App />);
+
+    expect(screen.getByText('API: недоступен')).toBeInTheDocument();
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
 });
