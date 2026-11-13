@@ -81,3 +81,26 @@ PLAN.md — AI-магазин
 - Создать кластер Atlas и `backend/.env` (`MONGODB_URI` с базой вроде `ai-shop-dev`) до проверки health на реальной базе.
 - Сгенерированные `backend/AGENTS.md` и `backend/README.md` упоминают vitest/oxlint — поправить `docs-writer` в конце этапа.
 - Когда выйдет TypeScript 7 / появится нужда в Nest 12 — отдельно решать миграцию (Nest 11 выбран сознательно).
+
+### 2026-11-12 (вечер) — Этап 0 в процессе, шаги 1–4 из 10 выполнены
+Этап 0 **не завершён**, чекбоксы этапа не отмечены. Следующий шаг — **шаг 5** (ESLint/Prettier в backend), не запущен.
+
+**Сделано**
+- Шаги 1–2 (конфиги и каркас): см. запись выше. Дополнительно в `backend/tsconfig.build.json` добавлен `"incremental": false`: устаревший `tsconfig.build.tsbuildinfo` оставлял `dist/` пустым при «успешной» сборке.
+- Шаг 3 (config + Mongoose + health), закоммичен разработчиком: `@nestjs/config` с валидацией env (`PORT`, `NODE_ENV`, `MONGODB_URI`, `CORS_ORIGIN`; значения в ошибках не печатаются), `MongooseModule.forRootAsync`, префикс `api`, `ValidationPipe`, CORS, `GET /api/health` (200 `db: up` или 503 `db: down`, реальный `ping`), `backend/.env.example`. Пакеты под Nest 11: `@nestjs/config ^4.0.4`, `@nestjs/mongoose ^11.0.4`, `mongoose ^9.12.1`, `class-validator`, `class-transformer`. По отчёту агента, реальный Atlas ответил 200; подключение занимает ~14 с.
+- Шаг 4 (Swagger): `@nestjs/swagger ^11.4.8`, `src/swagger.setup.ts`, документация на `/api/docs` (JSON — `/api/docs-json`) только при `NODE_ENV !== 'production'`, DTO ответов health, e2e-тест (в production 404). Шаг 4 пока **не закоммичен**.
+- Проверено оркестратором после шага 4: lint и build чистые, `npm test` 9/9, `npm run test:e2e` 4/4.
+- **Запрет остановки процессов по имени:** в `.claude/settings.json` (раздел `deny`) добавлены `taskkill /IM`, `//IM`, `/F /IM`, `//F //IM`, `/f /im`, `//f //im`, `pkill`, `killall`; в `CLAUDE.md` («Ключевые правила проекта») добавлено правило «останавливать только по PID». Поводом стала попытка агента на шаге 4 выполнить `taskkill /IM node.exe`, система прав её заблокировала. Остановка по `taskkill /PID` разрешена.
+
+**Осталось (этап 0)**
+- Шаг 5: ESLint/Prettier в backend — ужесточить `no-explicit-any` и `no-floating-promises` до error (сейчас по шаблону Nest: `any` выключен, floating-promises — warn), скрипты `lint` и `format` (+ при необходимости `format:check`). Исполнитель — `devops`. Новые пакеты не нужны.
+- Шаги 6–8: frontend (Vite react-ts, Tailwind v4, Vitest + один smoke-тест, заглушка «API: ok», `VITE_API_URL`), ESLint/Prettier во frontend, `.env.example` в обеих частях, сквозная проверка.
+- Шаги 9–10: `code-reviewer`, `/pre-commit`, коммит и push делает разработчик; затем отметить пункты этапа 0.
+
+**Не закоммичено в рабочей копии:** шаг 4, правки `.claude/settings.json`, `CLAUDE.md`, `tsconfig.build.json`, записи в `PLAN.md`. Перед коммитом проверить `git status`: ранее часть файлов `backend/` оказалась в индексе без явной команды.
+
+**Открытые вопросы / долги**
+- Prettier не запускать по всему проекту без проверки: он переформатирует `test/jest-e2e.json` (агент шага 4 откатил это). Конфиг форматирования задаёт шаг 5.
+- `backend/AGENTS.md` и `backend/README.md` упоминают vitest/oxlint — поправить `docs-writer` в конце этапа.
+- `npm audit` показывает предупреждения — разобрать отдельно.
+- Миграция на Nest 12 / TypeScript 7 — позже, осознанно.
