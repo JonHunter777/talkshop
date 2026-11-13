@@ -7,9 +7,7 @@ import { HealthService } from './../src/health/health.service';
 import { setupSwagger } from './../src/swagger.setup';
 
 // Real Atlas is never used in tests: HealthService is overridden.
-async function createApp(
-  swaggerEnabled: boolean,
-): Promise<INestApplication<App>> {
+async function createApp(swaggerEnabled: boolean): Promise<INestApplication<App>> {
   const moduleRef = await Test.createTestingModule({ imports: [HealthModule] })
     .overrideProvider(HealthService)
     .useValue({ isDbUp: jest.fn() })
@@ -30,13 +28,8 @@ describe('Swagger docs (e2e)', () => {
 
   it('serves /api/docs and /api/docs-json when enabled', async () => {
     app = await createApp(true);
-    await request(app.getHttpServer())
-      .get('/api/docs')
-      .expect(200)
-      .expect('Content-Type', /html/);
-    const res = await request(app.getHttpServer())
-      .get('/api/docs-json')
-      .expect(200);
+    await request(app.getHttpServer()).get('/api/docs').expect(200).expect('Content-Type', /html/);
+    const res = await request(app.getHttpServer()).get('/api/docs-json').expect(200);
     const body = res.body as { paths: Record<string, unknown> };
     expect(Object.keys(body.paths)).toContain('/api/health');
   });

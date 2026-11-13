@@ -8,10 +8,7 @@ export class HealthService {
 
   // readyState 1 = connected; the ping proves the server really answers.
   async isDbUp(): Promise<boolean> {
-    if (
-      this.connection.readyState !== ConnectionStates.connected ||
-      !this.connection.db
-    ) {
+    if (this.connection.readyState !== ConnectionStates.connected || !this.connection.db) {
       return false;
     }
     try {

@@ -1,14 +1,6 @@
 import 'reflect-metadata';
 import { plainToInstance } from 'class-transformer';
-import {
-  IsIn,
-  IsInt,
-  IsNotEmpty,
-  IsString,
-  Max,
-  Min,
-  validateSync,
-} from 'class-validator';
+import { IsIn, IsInt, IsNotEmpty, IsString, Max, Min, validateSync } from 'class-validator';
 
 export class EnvironmentVariables {
   @IsInt()
@@ -30,9 +22,7 @@ export class EnvironmentVariables {
 
 // Fails fast at startup. The error text lists only variable names and rules,
 // never values, because MONGODB_URI contains credentials.
-export function validateEnv(
-  config: Record<string, unknown>,
-): EnvironmentVariables {
+export function validateEnv(config: Record<string, unknown>): EnvironmentVariables {
   const instance = plainToInstance(EnvironmentVariables, config, {
     enableImplicitConversion: true,
     exposeDefaultValues: true,
@@ -40,10 +30,7 @@ export function validateEnv(
   const errors = validateSync(instance);
   if (errors.length > 0) {
     const details = errors
-      .map(
-        (e) =>
-          `${e.property}: ${Object.values(e.constraints ?? {}).join(', ')}`,
-      )
+      .map((e) => `${e.property}: ${Object.values(e.constraints ?? {}).join(', ')}`)
       .join('; ');
     throw new Error(`Invalid environment variables -> ${details}`);
   }
