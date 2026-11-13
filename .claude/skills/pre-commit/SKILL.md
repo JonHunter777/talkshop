@@ -33,10 +33,10 @@ git diff --staged
 
 ```bash
 # если изменён backend/
-cd backend && npm run lint && npm run build && npm run test
+cd backend && npm run lint && npm run build && npm run test && npm run format:check
 
 # если изменён frontend/
-cd frontend && npm run lint && npm run build && npm run test --if-present
+cd frontend && npm run lint && npm run build && npm run test && npm run format:check
 ```
 
 Если упало — **дальше не идти**. Покажи ошибку и что, скорее всего, её вызвало.
