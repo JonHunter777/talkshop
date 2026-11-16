@@ -2,6 +2,11 @@ import { validateEnv } from './env.validation';
 
 const JWT_SECRET = 'test-jwt-secret-with-at-least-32-characters!';
 
+// Fake URI WITHOUT login and password (project rule: never put credentials into test URIs;
+// secret scanners flag them). Its host is a unique marker that must never reach error messages.
+const FAKE_HOST = 'cluster0.example.invalid';
+const FAKE_URI = `mongodb+srv://${FAKE_HOST}/talkshop-dev`;
+
 describe('validateEnv', () => {
   it('accepts valid config and applies defaults', () => {
     const env = validateEnv({ MONGODB_URI: 'mongodb://localhost/test', JWT_SECRET });
@@ -20,19 +25,18 @@ describe('validateEnv', () => {
   });
 
   it('throws on invalid NODE_ENV without leaking the URI', () => {
-    const secret = 'mongodb+srv://user:topsecret@host/db';
     let message = '';
     try {
-      validateEnv({ MONGODB_URI: secret, JWT_SECRET, NODE_ENV: 'staging' });
+      validateEnv({ MONGODB_URI: FAKE_URI, JWT_SECRET, NODE_ENV: 'staging' });
     } catch (e) {
       message = (e as Error).message;
     }
     expect(message).toMatch(/NODE_ENV/);
-    expect(message).not.toContain('topsecret');
+    expect(message).not.toContain(FAKE_HOST);
   });
 
   describe('edge cases', () => {
-    const fakeUri = 'mongodb://user:secret-pass@host/db';
+    const fakeUri = FAKE_URI;
 
     function getErrorMessage(config: Record<string, unknown>): string {
       try {
@@ -48,7 +52,7 @@ describe('validateEnv', () => {
       (port) => {
         const message = getErrorMessage({ MONGODB_URI: fakeUri, JWT_SECRET, PORT: port });
         expect(message).toMatch(/PORT/);
-        expect(message).not.toContain('secret-pass');
+        expect(message).not.toContain(FAKE_HOST);
         expect(message).not.toContain(fakeUri);
       },
     );
@@ -61,7 +65,7 @@ describe('validateEnv', () => {
     it('throws when CORS_ORIGIN is an empty string and does not leak the URI', () => {
       const message = getErrorMessage({ MONGODB_URI: fakeUri, JWT_SECRET, CORS_ORIGIN: '' });
       expect(message).toMatch(/CORS_ORIGIN/);
-      expect(message).not.toContain('secret-pass');
+      expect(message).not.toContain(FAKE_HOST);
     });
 
     it('throws when JWT_SECRET is missing', () => {
@@ -74,7 +78,7 @@ describe('validateEnv', () => {
       const message = getErrorMessage({ MONGODB_URI: fakeUri, JWT_SECRET: shortSecret });
       expect(message).toMatch(/JWT_SECRET/);
       expect(message).not.toContain(shortSecret);
-      expect(message).not.toContain('secret-pass');
+      expect(message).not.toContain(FAKE_HOST);
     });
 
     it('accepts JWT_SECRET of exactly 32 chars', () => {
@@ -106,7 +110,7 @@ describe('validateEnv', () => {
         });
         expect(message).toMatch(/JWT_EXPIRES_IN_SECONDS/);
         expect(message).not.toContain(JWT_SECRET);
-        expect(message).not.toContain('secret-pass');
+        expect(message).not.toContain(FAKE_HOST);
       },
     );
 
@@ -118,7 +122,7 @@ describe('validateEnv', () => {
     it('rejects NODE_ENV staging and does not leak the URI', () => {
       const message = getErrorMessage({ MONGODB_URI: fakeUri, JWT_SECRET, NODE_ENV: 'staging' });
       expect(message).toMatch(/NODE_ENV/);
-      expect(message).not.toContain('secret-pass');
+      expect(message).not.toContain(FAKE_HOST);
     });
   });
 });

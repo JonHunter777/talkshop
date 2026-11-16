@@ -44,15 +44,17 @@ describe('dropTestDb safety guard', () => {
     expect(connection.dropDatabase).toHaveBeenCalledTimes(1);
   });
 
-  it('does not put credentials into the error message', async () => {
+  it('does not put the connection string into the error message', async () => {
     const connection = {
       ...fakeConnection(GOOD_NAME, 'cluster0.abcde.mongodb.net'),
       // Extra field that a real connection could carry: must never reach the message.
-      uri: 'mongodb+srv://user:secret-pass@cluster0.abcde.mongodb.net/db',
+      // Fake URI without login and password (project rule for test URIs).
+      uri: 'mongodb+srv://cluster0.example.invalid/talkshop-dev',
     };
     const error = await dropTestDbConnection(connection).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(Error);
-    expect((error as Error).message).not.toContain('secret-pass');
+    expect((error as Error).message).not.toContain('mongodb+srv://');
+    expect((error as Error).message).not.toContain('/talkshop-dev');
     expect(connection.dropDatabase).not.toHaveBeenCalled();
   });
 
