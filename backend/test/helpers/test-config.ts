@@ -7,13 +7,17 @@ import { buildTestDbUri } from './test-db';
 // (real Atlas URI). So we wrap forRoot BEFORE AppModule is imported:
 // no .env file, no process.env, only the fake env below, still checked by validateEnv.
 // create-test-app.ts imports this file first for exactly this reason.
+// Exported so tests can sign their own tokens (e.g. an admin token or an expired one)
+export const TEST_JWT_SECRET = 'test-only-secret-0123456789-abcdefghij';
+export const TEST_JWT_EXPIRES_IN_SECONDS = 3600;
+
 export function buildTestEnv(): Record<string, string | number> {
   return {
     NODE_ENV: 'test',
     PORT: 3000,
     MONGODB_URI: buildTestDbUri(),
-    JWT_SECRET: 'test-only-secret-0123456789-abcdefghij',
-    JWT_EXPIRES_IN_SECONDS: 3600,
+    JWT_SECRET: TEST_JWT_SECRET,
+    JWT_EXPIRES_IN_SECONDS: TEST_JWT_EXPIRES_IN_SECONDS,
     CORS_ORIGIN: 'http://localhost:5173',
   };
 }

@@ -5,6 +5,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { DEFAULT_THROTTLE_LIMIT, DEFAULT_THROTTLE_TTL_MS } from './common/constants/throttle';
 import { validateEnv } from './config/env.validation';
+import { AuthModule } from './auth/auth.module';
 import { HealthModule } from './health/health.module';
 import { UsersModule } from './users/users.module';
 
@@ -20,6 +21,7 @@ import { UsersModule } from './users/users.module';
     }),
     HealthModule,
     UsersModule,
+    AuthModule,
   ],
   // Global guard: every route is rate-limited unless it opts out
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
