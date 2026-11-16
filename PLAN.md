@@ -1,6 +1,6 @@
 PLAN.md — AI-магазин
 Чек-лист этапов. Оркестратор читает этот файл в начале каждой сессии, отмечает выполненное - [x] и пишет короткий итог в «Журнал».
-Текущий этап: 0 выполнен; следующий — 1 (начинаем только по команде «дальше»)
+Текущий этап: 1 (план утверждён 2026-11-16, исполнение не начато; шаг 1 требует отдельного «ок» на установку пакетов)
 Этап 0. Подготовка
 [x] Монорепо: папки backend/ (NestJS) и frontend/ (Vite + React + TS + Tailwind)
 [x] ESLint + Prettier в обеих частях
@@ -11,9 +11,94 @@ PLAN.md — AI-магазин
 Этап 1. Backend-основа
 [ ] Модули users, auth (JWT, bcrypt), products, cart, orders
 [ ] DTO, валидация, guards, пагинация, цены в центах
-[ ] Сид-скрипт: 40–60 товаров, 2 пользователя, несколько заказов
+[ ] Сид-скрипт: 30–50 товаров в 6 категориях, admin и демо-покупатель, без заказов (заказы в сиде — этап 5)
 [ ] Unit- и e2e-тесты
 • Готово, когда: весь API магазина проверяется в Swagger
+
+#### План этапа 1 (составил architect, утверждён разработчиком 2026-11-16; исполнение не начато)
+
+**Решения по 12 вопросам** (приняты дефолты architect, кроме п. 8 и 12 — уточнены разработчиком)
+1. Цена — целое `priceCents` в копейках, валюта UAH: константа `CURRENCY` в `common/constants/shop.ts`, в заказе поле `currency`. Форматирует только frontend. Диапазон `1..100_000_000`.
+2. `slug` товара задаёт админ в теле запроса (автогенерация из кириллицы потребовала бы библиотеки).
+3. Удаление товара — hard delete: заказы хранят снапшот, из корзины пропавший товар показывается с `available: false`.
+4. В заказ добавляются `shipping` (`fullName`, `phone`, `city`, `address`) и необязательный `note`. Оплаты нет.
+5. Отмена заказа — только админом через смену статуса; покупатель отменять не может (позже).
+6. Хеш паролей — `bcryptjs ^3` (bcrypt на чистом JS, без node-gyp на Windows/Node 24).
+7. Пакеты (установка только на шаге 1, после отдельного «ок»): `@nestjs/jwt ^11.0.2`, `bcryptjs ^3.0.3`, `@nestjs/throttler ^6.8.0`, `mongodb-memory-server ^11.3.0` (dev). Не ставим: `passport*`, `bcrypt`, `argon2`, `helmet`, `tsx`, `ts-node`, `slugify`, `uuid`.
+8. Сид лежит в `backend/src/seed/` (не `scripts/seed.ts`): не нужны `tsx`/`ts-node`, `nest build` компилирует всё. `CLAUDE.md` обновлён (структура и зона `db-specialist`).
+9. Сид создаёт admin и одного демо-покупателя; пароли и email — из `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_USER_EMAIL`, `SEED_USER_PASSWORD` (проверяются внутри сида, не в общей валидации env; в `.env.example` — плейсхолдеры).
+10. Заказы в сиде — этап 5.
+11. JWT живёт 1 час (`JWT_EXPIRES_IN_SECONDS=3600`, допустимо 60..604800), `JWT_SECRET` не короче 32 символов; refresh-токенов нет.
+12. Имя dev-базы в Atlas оканчивается на `-dev`: у разработчика это `talkshop-dev`. Сид отказывается работать, если `NODE_ENV=production` или имя базы не оканчивается на `-dev`/`-test`; в лог пишется только имя базы, не URI. (Пример `ai-shop-dev` в `backend/.env.example` и `backend/README.md` заменить на `talkshop-dev` на шаге 1.)
+
+**Данные сида**
+- Только локальный JSON в `backend/src/seed/data/` (например `products.json`), читается при запуске с диска: никаких сетевых запросов при запуске сида.
+- Картинки — только URL строками (внешние ссылки на сайты не проверяются и не скачиваются; загрузки файлов нет).
+- Тексты товаров (названия, описания, материалы) пишутся своими словами, не копируются с JYSK и других магазинов. Цены — в копейках; несколько товаров с малым остатком для тестов.
+- 30–50 товаров в категориях `kitchen`, `textile`, `decor`, `furniture`, `lighting`, `storage`. Идемпотентность: upsert по `slug`, остаток и пароли при повторном запуске не перезаписываются (`$setOnInsert`).
+- Открытый вопрос до шага 9: на каком языке тексты товаров (uk/ru/en) — связано с решением по языку интерфейса из «Долгов».
+
+**Структура** (`backend/src/`)
+- `common/`: `constants/` (роли, `CURRENCY`, лимиты), `decorators/` (`@CurrentUser`, `@Roles`, `@Auth`), `guards/` (`JwtAuthGuard`, `RolesGuard`), `pipes/` (`ParseObjectIdPipe`), `dto/` (пагинация), `types/`, `utils/` (`isDuplicateKeyError`).
+- `users/` (без контроллера), `auth/`, `products/`, `cart/`, `orders/`, `seed/` (`seed.ts` — CLI, `run-seed.ts` — чистая функция, `seed-guard.ts`, `data/`).
+- `backend/test/`: `globalSetup`/`globalTeardown` (одна `MongoMemoryReplSet` на прогон, у каждого файла своя база), `helpers/`, `factories/`.
+- Зависимости модулей без циклов: `auth → users`, `cart → products`, `orders → cart, products`; чужие модели — только через экспортируемый сервис. `JwtModule` глобальный.
+
+**Схемы**
+- `users`: `email` (lowercase, unique), `passwordHash` (`select: false`), `name`, `role` (`customer`|`admin`).
+- `products`: `name`, `slug` (unique), `description`, `category` (6 значений), `priceCents`, `stock`, `images` (до 10 URL http/https), `attributes {material, size, color}`. Индексы: unique `slug`; `{category, priceCents}`; `{category, createdAt}`; text по `name` (вес 10), `attributes.material` и `attributes.color` (3), `description` (1), `default_language: 'none'` (поиск по целым словам, без морфологии: известное ограничение).
+- `carts`: `userId` (unique), `items[{productId, quantity 1..99}]`, до 50 строк; цен и названий в корзине нет.
+- `orders`: `orderNumber` (`TS-YYMMDD-XXXXXX`, unique), `userId`, `items[]` (снапшот: `productId`, `name`, `slug`, `priceCents`, `quantity`), `totalCents` (считает только сервер), `currency`, `status`, `shipping`, `note`. Индексы: `{userId, createdAt}`, `{status, createdAt}`.
+
+**Эндпоинты** (префикс `/api`)
+- auth: `POST /auth/register` и `POST /auth/login` (публичные, 5 запросов в минуту), `GET /auth/me`.
+- products: `GET /products` (page, limit ≤ 50, category, minPriceCents, maxPriceCents, q ≤ 100, sort = newest|price_asc|price_desc|relevance), `GET /products/:id`, `GET /products/slug/:slug`; `POST`, `PATCH /:id`, `DELETE /:id` — только admin.
+- cart (все под JWT): `GET /cart`, `POST /cart/items`, `PATCH /cart/items/:productId`, `DELETE /cart/items/:productId`, `DELETE /cart`.
+- orders: `POST /orders`; `GET /orders` и `GET /orders/:id` — только свои (чужой заказ → 404); `GET /orders/all` и `PATCH /orders/:id/status` — только admin.
+- Ошибки — стандартный формат Nest (400 валидация и неверный id, 401, 403, 404, 409 дубли/остаток/переход статуса, 429); 422 не используем; 409 по остатку несёт список проблемных позиций. Глобальный exception filter — этап 7. Одинаковый 401 для «нет email» и «неверный пароль».
+
+**Auth:** `@nestjs/jwt` и самописный `JwtAuthGuard` (без passport), HS256 зафиксирован, payload `{sub, role}`; `userId` и роль только из токена через `@CurrentUser()`; в `RegisterDto` нет `role` (лишнее поле → 400), первый admin создаётся только сидом; пароль 8..72 символа; защита от определения email по времени ответа (dummy-хеш).
+
+**Checkout без overselling:** транзакция MongoDB (в тестах `MongoMemoryReplSet`). Внутри: корзина (пустая → 400), для каждой позиции условный `$inc` с `stock >= qty`; все нехватки собираются в один 409 с полным списком, при любой нехватке откат целиком (остатки, заказ и корзина не меняются); иначе заказ со снапшотом и очистка корзины. Главный риск — забытый `{ session }`; закрывается тестом на откат и ревью `db-specialist`.
+
+**Статусы заказа:** `pending → processing → shipped → delivered`; `cancelled` из `pending` и `processing`; `delivered` и `cancelled` — терминальные. Меняет только admin; переход атомарный (`findOneAndUpdate` с проверкой текущего статуса: нет заказа → 404, статус уже другой → 409). При `→ cancelled` остатки по позициям возвращаются ровно один раз (`$inc: +quantity`; позиции, чьих товаров уже нет, пропускаются); повторная отмена даёт 409 и остаток не растёт. Возврат остатков делается отдельным шагом после успешного перехода и не в транзакции: если процесс упадёт между ними, возврат потеряется. Для учебного проекта риск принят, при необходимости потом обернём в транзакцию.
+
+**Шаги** (после каждого `lint`, `build`, `test`, `test:e2e` зелёные; каждый шаг — отдельный коммит разработчика)
+- [ ] 1 ⏸ (нужно отдельное «ок» на пакеты) — установить 4 пакета; `JWT_SECRET` и `JWT_EXPIRES_IN_SECONDS` в `env.validation.ts`, его spec и `.env.example` (разработчик добавляет значения в свой `backend/.env` сам); `talkshop-dev` в примерах; тестовая инфраструктура (`globalSetup`, `helpers/create-test-app.ts`, `jest-e2e.json`); `persistAuthorization` в Swagger. Агенты: `backend-dev`, `test-writer`. Коммит: `chore(backend): add jwt, bcryptjs, throttler, memory-server and test infra`.
+- [ ] 2 — `common/`: константы, `ParseObjectIdPipe`, `PaginationQueryDto`, ответ с пагинацией, `isDuplicateKeyError`, тип `AuthUser`; `ThrottlerModule` в `AppModule` (100 запросов в минуту). Unit-тесты pipe и DTO. Агент: `backend-dev`. Коммит: `feat(backend): add common pipes, pagination dto and throttler`.
+- [ ] 3 — схема и модуль `users` (`UsersService`: `create`, `findByEmail`, `findById`, нормализация email, E11000 → 409; `passwordHash` не попадает в выборку по умолчанию). Агенты: `db-specialist` (схема и индекс), `backend-dev` (сервис). Коммит: `feat(backend): add users module`.
+- [ ] 4 — `auth`: register, login, me; `JwtAuthGuard`, `RolesGuard`, `@CurrentUser`, `@Roles`, `@Auth`; throttle 5 в минуту; Swagger. Агент: `backend-dev`. Коммит: `feat(backend): add auth with jwt, roles guard and throttling`.
+- [ ] 5 — `products`: схема с индексами и text-индексом, список с фильтрами, поиском, сортировкой и пагинацией, CRUD админа, методы для других модулей (`findManyByIds`, `decrementStock`). Агенты: `db-specialist`, `backend-dev`. Коммит: `feat(backend): add products module with filters and text search`.
+- [ ] 6 — `cart`: атомарные `addItem`, `PATCH`, `DELETE`, очистка, `CartDto` (цены читаются из товаров, `available`, `exceedsStock`). Агенты: `db-specialist`, `backend-dev`. Коммит: `feat(backend): add cart module`.
+- [ ] 7 — `orders`: схема, `checkout` в транзакции, `orderNumber`, `GET /orders`, `GET /orders/:id`. Агенты: `db-specialist` (транзакция, ревью `{session}`), `backend-dev`. Коммит: `feat(backend): add orders checkout with transactions`.
+- [ ] 8 — `GET /orders/all`, `PATCH /orders/:id/status`, матрица переходов `canTransition`, возврат остатков при отмене. Агент: `backend-dev`. Коммит: `feat(backend): add admin order list and status transitions`.
+- [ ] 9 — сид: `src/seed/data/*.json`, `seed-guard.ts`, `run-seed.ts`, `seed.ts`, скрипт `seed` (`nest build && node dist/seed/seed.js`), seed-переменные в `.env.example`. Агент: `db-specialist`. Коммит: `feat(backend): add idempotent seed script`.
+- [ ] 10 — сквозной e2e (регистрация → логин → каталог → корзина → checkout → мои заказы → админ меняет статус), полнота Swagger (все пути, схема `bearer`), ручной прогон в `/api/docs`. Агенты: `test-writer`, затем разработчик. Коммит: `test(backend): add full shop flow e2e and swagger coverage`.
+- [ ] 11 — `code-reviewer` по всему diff (🔴 и 🟡 исправить), затем обязательный `security-auditor` (затронуты `auth/` и `orders/`). Коммит при правках: `fix(backend): ...`.
+- [ ] 12 — документация (`docs-writer`): `backend/README.md` (эндпоинты, сид, env, тесты), отметки в `PLAN.md`, примеры «€» → гривны в `PLAN.md` и `db-specialist.md`. Коммит: `docs: stage 1 done`.
+
+**Ключевые тесты**
+- Общие: `env.validation` (короткий `JWT_SECRET` → ошибка без значения в тексте, TTL вне диапазона), `ParseObjectIdPipe` (строго 24 hex), пагинация (`page=0`, `limit=51` → 400), guards (нет заголовка, чужая подпись, просроченный токен, другой алгоритм → 401; customer на admin-маршруте → 403).
+- auth: хеш не равен паролю, в ответе нет `passwordHash`, email нормализуется (`A@B.com ` → `a@b.com`, повтор → 409), `role: 'admin'` в теле → 400, пароль 7 и 73 символа → 400, одинаковый 401 для неверного пароля и несуществующего email, `/auth/me` без токена 401 и по токену удалённого пользователя 404, 6-й логин за минуту → 429.
+- products: дефолты пагинации, `limit=51` → 400, границы цены включительно, `min>max` → 400, неизвестная категория → 400, поиск по названию, материалу и цвету (название весит больше описания, регистр не важен), `sort=relevance` без `q` → 400, CRUD только admin (без токена 401, customer 403), дубль `slug` → 409 на уровне БД, `priceCents` дробный или 0 → 400, невалидный URL картинки → 400.
+- cart: все маршруты без токена → 401; повторное добавление суммирует; `quantity` 0, 100, 1.5 → 400; несуществующий товар 404; превышение остатка (с учётом уже лежащего) → 409, ровно по остатку ок; `userId` в теле → 400; цены берутся из товара (после смены цены итог обновляется); удалённый товар → `available: false` и не входит в итог; параллельные добавления дают одну строку.
+- orders:
+  - Checkout: 201; снапшот `name`, `slug`, `priceCents`, `quantity`; `totalCents` верный; остаток уменьшился; корзина пуста; формат `orderNumber`; клиентские `totalCents`, `priceCents`, `userId`, `status` в теле → 400.
+  - Снапшот не меняется после смены цены и имени товара и даже после его удаления.
+  - Пустая корзина → 400; товар из корзины удалён → 409 с `reason: 'not_found'`; нехватка остатка → 409 с полным списком позиций, ни один остаток не изменился, заказ не создан, корзина осталась.
+  - Откат при частичной нехватке (две позиции, у второй не хватает): остаток первой прежний. Так проверяется, что нигде не забыт `{ session }`.
+  - Гонка: остаток 1 и два пользователя оформляют заказ параллельно (`Promise.all`) → ровно один 201 и один 409, `stock === 0`, не отрицательный; остаток 5 и два запроса по 3 → один успех.
+  - Доступ: чужой заказ → 404; admin видит любой; `GET /orders` показывает только свои даже у admin; `GET /orders/all` для customer → 403, без токена → 401; фильтр по `status`, пагинация и границы, новые первыми.
+  - Статусы: вся матрица `canTransition` (unit); `PATCH` от customer → 403; допустимый переход → 200; недопустимый (`delivered → pending`) → 409; несуществующий заказ → 404.
+  - Отмена возвращает остатки по всем позициям ровно один раз: повторная отмена → 409, остаток не растёт; позиции удалённых товаров пропускаются без ошибки; возврат не затрагивает остатки других товаров.
+- seed: два прогона подряд дают одинаковое число товаров и пользователей (дублей `slug` и email нет); admin имеет роль `admin`, демо-покупатель `customer`, пароли хешируются; повторный запуск не сбрасывает остаток и пароль; `assertSafeSeedTarget` отказывает при `NODE_ENV=production`, при базе без суффикса `-dev`/`-test` и при отсутствии обязательных seed-переменных, разрешает `talkshop-dev`; в текстах ошибок нет URI; при запуске нет сетевых запросов (данные читаются из JSON).
+- Swagger: схема безопасности `bearer` есть, у защищённых операций есть `security`, все пути из плана присутствуют в `/api/docs-json`.
+
+**Тестовая инфраструктура:** unit-тесты (`src/**/*.spec.ts`) — чистая логика и сервисы с моками; e2e (`test/*.e2e-spec.ts`) — HTTP через Supertest на реальной Mongo в памяти (`MongoMemoryReplSet`, один экземпляр на прогон, у каждого файла своя база и `syncIndexes()` перед тестами). Первый запуск скачает бинарник `mongod` (порядка 100–300 МБ); на Windows возможен запрос брандмауэра; в CI (этап 8) нужен кеш. Реальный Atlas в тестах не используется.
+
+**Риски:** поиск без морфологии («килим» не найдёт «килими»); роль в токене живёт до часа; Throttler за прокси видит один IP (`trust proxy` — этап 8); забытый `{ session }` в транзакции; возврат остатков при отмене не атомарен вместе со сменой статуса; бинарник Mongo при первом запуске тестов.
+
+**Откладываем:** оплата, возвраты и отмена покупателем; refresh-токены, подтверждение email, сброс пароля; загрузка изображений (пока только URL); админ-аналитика (этап 6); модули ai и assistant (этапы 3–7); заказы в сиде (этап 5); глобальный exception filter (этап 7); `helmet` (CSP ломает Swagger UI), CORS по списку, `trust proxy`, `npm audit`, `autoIndex` в production (этап 8); Idempotency-Key для checkout.
 Этап 2. Frontend магазина
 [ ] Каталог с фильтрами и поиском, карточка товара
 [ ] Корзина, оформление заказа

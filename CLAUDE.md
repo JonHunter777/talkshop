@@ -43,8 +43,8 @@ ai-shop/
 │   │   ├── auth/  users/  products/  cart/  orders/  support/  admin/
 │   │   ├── ai/          # агенты, промпты, tools, agent loop, router, aiLogs
 │   │   ├── assistant/   # чат: SSE, chatSessions, /assistant/confirm
-│   │   └── common/      # guards, decorators, pipes, filters
-│   ├── scripts/seed.ts
+│   │   ├── common/      # guards, decorators, pipes, filters
+│   │   └── seed/        # идемпотентный сид (npm run seed), данные в seed/data/*.json
 │   ├── evals/
 │   └── test/
 ├── frontend/
@@ -94,7 +94,7 @@ npm run test
 | `backend-dev` | `backend/src` (кроме `ai/`, `assistant/`) | ✅ | реализация API |
 | `frontend-dev` | `frontend/` | ✅ | реализация UI |
 | `ai-engineer` | `backend/src/ai`, `backend/src/assistant` | ✅ | AI-агенты, tools, стриминг |
-| `db-specialist` | схемы, индексы, агрегации, `scripts/seed.ts` | ✅ | данные и запросы |
+| `db-specialist` | схемы, индексы, агрегации, `backend/src/seed/` | ✅ | данные и запросы |
 | `test-writer` | файлы тестов | ✅ только тесты | после каждого модуля/фичи |
 | `code-reviewer` | весь diff | ❌ | перед каждым коммитом |
 | `security-auditor` | весь проект | ❌ | после AI-этапов, auth/orders, перед деплоем |
