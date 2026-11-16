@@ -2,6 +2,7 @@
 import './test-config';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { getOptionsToken } from '@nestjs/throttler';
 import { App } from 'supertest/types';
 import { AppModule } from '../../src/app.module';
 import { syncAllIndexes } from './test-db';
@@ -10,9 +11,11 @@ import { syncAllIndexes } from './test-db';
 // CORS and Swagger are not needed for API tests.
 export async function createTestApp(): Promise<INestApplication<App>> {
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
-    // Stage 1, step 2: when ThrottlerGuard is registered globally, disable it here, e.g.
-    // .overrideProvider(ThrottlerGuard).useValue({ canActivate: () => true })
-    // (or raise the limits for a dedicated rate-limit test).
+    // The global ThrottlerGuard (APP_GUARD) cannot be replaced with overrideGuard, so we
+    // override its options: skipIf makes it let every request through (no 429 in API tests).
+    // Rate limiting is tested separately in test/throttler.e2e-spec.ts.
+    .overrideProvider(getOptionsToken())
+    .useValue([{ ttl: 60_000, limit: 1, skipIf: () => true }])
     .compile();
 
   const app = moduleRef.createNestApplication<INestApplication<App>>();

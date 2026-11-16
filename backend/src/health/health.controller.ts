@@ -5,6 +5,7 @@ import {
   ApiServiceUnavailableResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 import { HealthErrorDto, HealthOkDto } from './dto/health-response.dto';
 import { HealthService } from './health.service';
 
@@ -13,6 +14,8 @@ export interface HealthResponse {
   db: 'up' | 'down';
 }
 
+// Platform probes (Render/Railway) poll often, so no rate limit here
+@SkipThrottle()
 @ApiTags('health')
 @Controller('health')
 export class HealthController {
