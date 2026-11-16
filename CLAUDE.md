@@ -15,7 +15,7 @@
 
 | Часть | Технологии |
 |---|---|
-| Backend | Node.js LTS, **NestJS**, TypeScript (strict), Mongoose, class-validator, Swagger, JWT, `@nestjs/throttler` |
+| Backend | Node.js LTS, **NestJS**, TypeScript (strict), Mongoose 8.x, class-validator, Swagger, JWT, `@nestjs/throttler` |
 | База | **MongoDB Atlas** (dev и prod — разные базы) |
 | Frontend | **React**, Vite, TypeScript, Tailwind CSS, TanStack Query, Zustand, React Router, react-hook-form + zod |
 | AI | `@anthropic-ai/sdk`, tool use, SSE-стриминг, prompt caching, Zod для валидации |
@@ -23,6 +23,8 @@
 | Деплой | Vercel (frontend), Render или Railway (backend), MongoDB Atlas, GitHub Actions (CI) |
 
 Новые библиотеки — только после объяснения и согласия разработчика.
+
+Используем API Mongoose 8, не 9 (причина — в Долгах PLAN.md).
 
 ---
 

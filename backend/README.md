@@ -1,11 +1,11 @@
 # Backend
 
-REST API of Talkshop, built with NestJS 11 (CommonJS), Mongoose 9 and MongoDB Atlas. At the moment it contains the project skeleton: config with env validation, database connection, a health endpoint and Swagger.
+REST API of Talkshop, built with NestJS 11 (CommonJS), Mongoose 8 and MongoDB Atlas. At the moment it contains the project skeleton: config with env validation, database connection, a health endpoint and Swagger.
 
 ## Requirements
 
 - Node.js from [`../.nvmrc`](../.nvmrc) (24), npm
-- A MongoDB Atlas cluster (use a separate database for dev, for example `ai-shop-dev`)
+- A MongoDB Atlas cluster (use a separate database for dev, for example `talkshop-dev`)
 
 ## Setup
 
@@ -24,6 +24,8 @@ Variables (see [`.env.example`](./.env.example)):
 | `NODE_ENV` | `development`, `production` or `test` |
 | `MONGODB_URI` | Atlas connection string (required) |
 | `CORS_ORIGIN` | Allowed frontend origin, default `http://localhost:5173` |
+| `JWT_SECRET` | Secret for signing JWT, at least 32 characters (required) |
+| `JWT_EXPIRES_IN_SECONDS` | JWT lifetime, `60`..`604800`, default `3600` |
 
 ## Endpoints
 

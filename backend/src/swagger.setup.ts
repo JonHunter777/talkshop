@@ -14,5 +14,8 @@ export function setupSwagger(app: INestApplication, enabled: boolean): void {
     .build();
 
   const document = SwaggerModule.createDocument(app, options);
-  SwaggerModule.setup('api/docs', app, document);
+  // persistAuthorization keeps the Bearer token after a page reload
+  SwaggerModule.setup('api/docs', app, document, {
+    swaggerOptions: { persistAuthorization: true },
+  });
 }
