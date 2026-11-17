@@ -7,6 +7,7 @@ import { DEFAULT_THROTTLE_LIMIT, DEFAULT_THROTTLE_TTL_MS } from './common/consta
 import { validateEnv } from './config/env.validation';
 import { AuthModule } from './auth/auth.module';
 import { HealthModule } from './health/health.module';
+import { ProductsModule } from './products/products.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -22,6 +23,7 @@ import { UsersModule } from './users/users.module';
     HealthModule,
     UsersModule,
     AuthModule,
+    ProductsModule,
   ],
   // Global guard: every route is rate-limited unless it opts out
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

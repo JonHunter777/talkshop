@@ -68,7 +68,7 @@ PLAN.md — AI-магазин
 - [x] 2 — `common/`: константы, `ParseObjectIdPipe`, `PaginationQueryDto`, ответ с пагинацией, `isDuplicateKeyError`, тип `AuthUser`; `ThrottlerModule` в `AppModule` (100 запросов в минуту). Unit-тесты pipe и DTO. Агент: `backend-dev`. Коммит: `feat(backend): add common pipes, pagination dto and throttler`.
 - [x] 3 — схема и модуль `users` (`UsersService`: `create`, `findByEmail`, `findById`, нормализация email, E11000 → 409; `passwordHash` не попадает в выборку по умолчанию). Агенты: `db-specialist` (схема и индекс), `backend-dev` (сервис). Коммит: `feat(backend): add users module`.
 - [ ] 4 — `auth`: register, login, me; `JwtAuthGuard`, `RolesGuard`, `@CurrentUser`, `@Roles`, `@Auth`; throttle 5 в минуту; Swagger. Агент: `backend-dev`. Коммит: `feat(backend): add auth with jwt, roles guard and throttling`.
-- [ ] 5 — `products`: схема с индексами и text-индексом, список с фильтрами, поиском, сортировкой и пагинацией, CRUD админа, методы для других модулей (`findManyByIds`, `decrementStock`). Агенты: `db-specialist`, `backend-dev`. Коммит: `feat(backend): add products module with filters and text search`.
+- [ ] 5 — `products`: схема с индексами и text-индексом, список с фильтрами, поиском, сортировкой и пагинацией, CRUD админа, методы для других модулей (`findManyByIds`, `decrementStock`). Уточнения: `GET /products/:id` публичный (нужен корзине); `PATCH` заменяет `attributes` целиком, без слияния; добавлен индекс `{createdAt: -1}` для списка без категории. Агенты: `db-specialist`, `backend-dev`. Коммит: `feat(backend): add products module with filters and text search`.
 - [ ] 6 — `cart`: атомарные `addItem`, `PATCH`, `DELETE`, очистка, `CartDto` (цены читаются из товаров, `available`, `exceedsStock`). Агенты: `db-specialist`, `backend-dev`. Коммит: `feat(backend): add cart module`.
 - [ ] 7 — `orders`: схема, `checkout` в транзакции, `orderNumber`, `GET /orders`, `GET /orders/:id`. Агенты: `db-specialist` (транзакция, ревью `{session}`), `backend-dev`. Коммит: `feat(backend): add orders checkout with transactions`.
 - [ ] 8 — `GET /orders/all`, `PATCH /orders/:id/status`, матрица переходов `canTransition`, смена статуса на `cancelled` и возврат остатков в одной транзакции. Агенты: `backend-dev`, `db-specialist` (ревью `{ session }`). Коммит: `feat(backend): add admin order list and status transitions`.
@@ -167,6 +167,8 @@ PLAN.md — AI-магазин
 - Prettier не запускать по всему проекту без проверки: он переформатирует `backend/test/jest-e2e.json` (скрипты `format` уже ограничены `src` и `test/**/*.ts`).
 
 ### Долги
+- Роль берётся из JWT без проверки в БД: после понижения роли или удаления пользователя токен действует до 1 часа.
+- Text-поиск без морфологии (`tablecloth` не находит `Tablecloths`) — решить к AI-этапу.
 - CORS по списку доменов вместо одного origin — этап 8.
 - `npm audit`: 10 moderate во frontend (цепочка eslint) и предупреждения в backend — этап 8.
 - Решение по языку интерфейса (uk/en) — до этапа 2.
