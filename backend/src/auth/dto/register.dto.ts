@@ -1,14 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsEmail, IsString, MaxLength, MinLength } from 'class-validator';
+import { trimInput } from '../../common/utils/trim-input';
 import { MaxBytes } from '../../common/validators/max-bytes.validator';
 
 // Normalize before validation so "  User@Mail.COM " becomes "user@mail.com"
 export const normalizeEmailInput = ({ value }: { value: unknown }): unknown =>
   typeof value === 'string' ? value.trim().toLowerCase() : value;
-
-const trimInput = ({ value }: { value: unknown }): unknown =>
-  typeof value === 'string' ? value.trim() : value;
 
 // No `role` field on purpose: with forbidNonWhitelisted an extra field gives 400
 export class RegisterDto {
