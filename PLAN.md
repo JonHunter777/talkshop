@@ -61,7 +61,17 @@ PLAN.md — AI-магазин
 
 **Checkout без overselling:** транзакция MongoDB (в тестах `MongoMemoryReplSet`). Внутри: корзина (пустая → 400), для каждой позиции условный `$inc` с `stock >= qty`; все нехватки собираются в один 409 с полным списком, при любой нехватке откат целиком (остатки, заказ и корзина не меняются); иначе заказ со снапшотом и очистка корзины. Главный риск — забытый `{ session }`; закрывается тестом на откат и ревью `db-specialist`.
 
-**Статусы заказа:** `pending → processing → shipped → delivered`; `cancelled` из `pending` и `processing`; `delivered` и `cancelled` — терминальные. Меняет только admin; переход атомарный (`findOneAndUpdate` с проверкой текущего статуса: нет заказа → 404, статус уже другой → 409). При `→ cancelled` остатки по позициям возвращаются ровно один раз (`$inc: +quantity`; позиции, чьих товаров уже нет, пропускаются); повторная отмена даёт 409 и остаток не растёт. Смена статуса на `cancelled` и возврат остатков выполняются **в одной транзакции**, как checkout (все операции с `{ session }`): если возврат упадёт, статус остаётся прежним, остатки не меняются, повторная отмена возможна.
+**Статусы заказа** (меняет только admin; уточнено при планировании шага 8). Переходы через `PATCH /orders/:id/status`:
+
+| Из \ В | processing | shipped | delivered |
+|---|---|---|---|
+| **pending** | ✅ | ❌ | ❌ |
+| **processing** | ❌ | ✅ | ❌ |
+| **shipped** | ❌ | ❌ | ✅ |
+| **delivered** | финальный, всё ❌ | | |
+| **cancelled** | финальный, всё ❌ | | |
+
+Шаги не перепрыгиваются, тот же статус (`pending → pending`) недопустим. `PATCH` значение `cancelled` **не принимает** (400, статус и остатки не меняются). Переход атомарный (`findOneAndUpdate` с проверкой текущего статуса в самом запросе: нет заказа → 404, статус уже другой или переход запрещён → 409). **Отмена — единственным путём `POST /orders/:id/cancel` (admin)**, только из `pending` и `processing` (из `shipped` отменить нельзя). При отмене остатки по позициям возвращаются ровно один раз (`$inc: +quantity`; позиции, чьих товаров уже нет, пропускаются); повторная отмена даёт 409 и остаток не растёт. Смена статуса на `cancelled` и возврат остатков выполняются **в одной транзакции**, как checkout (все операции с `{ session }`): если возврат упадёт, статус остаётся прежним, остатки не меняются, повторная отмена возможна.
 
 **Шаги** (после каждого `lint`, `build`, `test`, `test:e2e` зелёные; каждый шаг — отдельный коммит разработчика)
 - [x] 1 ⏸ (нужно отдельное «ок» на пакеты) — установить 4 пакета; `JWT_SECRET` и `JWT_EXPIRES_IN_SECONDS` в `env.validation.ts`, его spec и `.env.example` (разработчик добавляет значения в свой `backend/.env` сам); `talkshop-dev` в примерах; тестовая инфраструктура (`globalSetup`, `helpers/create-test-app.ts`, `jest-e2e.json`); `persistAuthorization` в Swagger. Агенты: `backend-dev`, `test-writer`. Коммит: `chore(backend): add jwt, bcryptjs, throttler, memory-server and test infra`.
@@ -71,7 +81,12 @@ PLAN.md — AI-магазин
 - [x] 5 — `products`: схема с индексами и text-индексом, список с фильтрами, поиском, сортировкой и пагинацией, CRUD админа, методы для других модулей (`findManyByIds`, `decrementStock`). Уточнения: `GET /products/:id` публичный (нужен корзине); `PATCH` заменяет `attributes` целиком, без слияния; добавлен индекс `{createdAt: -1}` для списка без категории. Агенты: `db-specialist`, `backend-dev`. Коммит: `feat(backend): add products module with filters and text search`.
 - [x] 6 — `cart`: атомарные `addItem`, `PATCH`, `DELETE`, очистка, `CartDto` (цены читаются из товаров, `available`, `exceedsStock`). Агенты: `db-specialist`, `backend-dev`. Коммит: `feat(backend): add cart module`.
 - [x] 7 — `orders`: схема, `checkout` в транзакции, `orderNumber`, `GET /orders`, `GET /orders/:id`. Агенты: `db-specialist` (транзакция, ревью `{session}`), `backend-dev`. Коммит: `feat(backend): add orders checkout with transactions`.
-- [ ] 8 — `GET /orders/all`, `PATCH /orders/:id/status`, матрица переходов `canTransition`, смена статуса на `cancelled` и возврат остатков в одной транзакции. Агенты: `backend-dev`, `db-specialist` (ревью `{ session }`). Коммит: `feat(backend): add admin order list and status transitions`.
+- [ ] 8 — админка заказов, CORS/helmet, аудит зависимостей. Агенты: `backend-dev`, `db-specialist` (ревью `{ session }`). Каждая часть — отдельный коммит разработчика:
+  - [x] 8-pre — роль admin проверяется в БД (`RolesGuard` читает только `role`; пользователь удалён → 401, роль не admin → 403; `UsersModule` глобальный). Коммит: `feat(backend): verify admin role in the database`.
+  - [ ] 8a-1 — `GET /orders/all` (admin; пагинация, фильтр `status`, новые первыми; объявлен до `:id`); индексы `{createdAt: -1, _id: -1}` и `{status: 1, createdAt: -1, _id: -1}` (проверка через `explain`, без стадии `SORT`); `GET /orders/all/:id` (admin) возвращает любой заказ с `userId` (объявлен до `:id`); `GET /orders/:id` остаётся «только свои, чужой → 404» для всех ролей, включая admin. Роль в БД проверяет только `RolesGuard` (один механизм), `OrdersService` не знает про роли. Коммит: `feat(backend): add admin order list`.
+  - [ ] 8a-2 — `PATCH /orders/:id/status` (допустимые переходы по таблице выше, `cancelled` → 400), чистая функция `canTransition` с тестом на всю матрицу; **`POST /orders/:id/cancel`** (admin): смена статуса с условием `pending`/`processing` и возврат остатков по снапшоту в одной транзакции, удалённый товар пропускается с `warn` в лог, повторная отмена → 409; `ProductsService.incrementStock(productId, qty, session)`; рефакторинг `placeOrder` → `reserveLines`. Коммит: `feat(backend): add order status transitions and cancel`.
+  - [ ] 8b — CORS по списку (`CORS_ORIGIN` через запятую, валидация в схеме env, `.env.example`), общая `configureApp(app)` для `main.ts` и тестов, helmet (`helmet@8.3.0`, ставится только после отдельного «ок»). Коммит: `feat(backend): add cors origin list and helmet`.
+  - [ ] 8c — `npm audit` (backend и frontend): только отчёт, ничего не обновлять без решения разработчика.
 - [ ] 9 — сид: `src/seed/data/*.json`, `seed-guard.ts`, `run-seed.ts`, `seed.ts`, скрипт `seed` (`nest build && node dist/seed/seed.js`), seed-переменные в `.env.example`. Агент: `db-specialist`. Коммит: `feat(backend): add idempotent seed script`.
 - [ ] 10 — сквозной e2e (регистрация → логин → каталог → корзина → checkout → мои заказы → админ меняет статус), полнота Swagger (все пути, схема `bearer`), ручной прогон в `/api/docs`. Агенты: `test-writer`, затем разработчик. Коммит: `test(backend): add full shop flow e2e and swagger coverage`.
 - [ ] 11 — `code-reviewer` по всему diff (🔴 и 🟡 исправить), затем обязательный `security-auditor` (затронуты `auth/` и `orders/`). Коммит при правках: `fix(backend): ...`.
@@ -171,7 +186,7 @@ PLAN.md — AI-магазин
 - Индекс под `GET /orders/all` без фильтра по статусу (`{ createdAt: -1, _id: -1 }`) или обязательный фильтр `status` у админа — шаг 8.
 - Рефакторинг `OrdersService.placeOrder` (~95 строк): вынести `reserveLines(cartItems, session)`; удобно сделать на шаге 8 вместе с возвратом остатков при отмене.
 - Unit-тесты `cart.service` на ветки retry, E11000 и BUSY (через e2e их не воспроизвести, нужен мок `cartModel`) — шаг 11.
-- Роль берётся из JWT без проверки в БД: после понижения роли или удаления пользователя токен действует до 1 часа.
+- Роль берётся из JWT без проверки в БД на маршрутах без `@Roles` (корзина, свои заказы): после понижения роли или удаления пользователя токен действует до 1 часа, вред ограничен данными самого пользователя. Для admin-маршрутов роль проверяется в БД (`RolesGuard`, шаг 8-pre).
 - Text-поиск без морфологии (`tablecloth` не находит `Tablecloths`) — решить к AI-этапу.
 - CORS по списку доменов вместо одного origin — этап 8.
 - `npm audit`: 10 moderate во frontend (цепочка eslint) и предупреждения в backend — этап 8.
