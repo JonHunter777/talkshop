@@ -169,13 +169,16 @@ export class ProductsService {
   // --- Methods for other modules (cart, orders). They return raw records, not API views. ---
 
   // Missing and malformed ids are skipped: the caller compares what it asked for with what came back.
-  async findManyByIds(ids: string[]): Promise<ProductRecord[]> {
+  // Inside a transaction (checkout) pass the session, so the read sees the same snapshot as the
+  // writes of that transaction.
+  async findManyByIds(ids: string[], session?: ClientSession): Promise<ProductRecord[]> {
     const validIds = [...new Set(ids.filter(isObjectIdString))];
     if (validIds.length === 0) {
       return [];
     }
     return this.productModel
       .find({ _id: { $in: validIds } })
+      .session(session ?? null)
       .lean<ProductRecord[]>()
       .exec();
   }

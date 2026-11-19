@@ -35,6 +35,17 @@ export class CartService {
     return buildCartView(items, products);
   }
 
+  // Raw cart lines for checkout (orders). Pass the checkout session: the read must be part of
+  // the same transaction as the stock updates and the cart cleanup.
+  async findItems(userId: string, session?: ClientSession): Promise<CartItemRecord[]> {
+    const cart = await this.cartModel
+      .findOne({ userId })
+      .session(session ?? null)
+      .lean<{ items: CartItemRecord[] }>()
+      .exec();
+    return cart?.items ?? [];
+  }
+
   // Adds `quantity` to the line of the product (or creates the line).
   //
   // Every change is ONE conditional update in the database (no read-modify-write), so parallel

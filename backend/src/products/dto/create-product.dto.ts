@@ -23,16 +23,14 @@ import {
   PRODUCT_CATEGORIES,
   type ProductCategory,
 } from '../../common/constants/shop';
+import { isDefined } from '../../common/utils/is-defined';
 import { trimInput } from '../../common/utils/trim-input';
 
 // Lowercase latin words joined by single hyphens: "linen-tablecloth-120"
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-// Optional field: it may be absent, but never `null`. (`@IsOptional()` would also let `null`
-// through to Mongoose, which fails there with a 500 instead of a 400.)
+// Optional fields use `@ValidateIf(isDefined)`: absent is fine, `null` is not.
 // To clear a field via PATCH, send an empty string or an empty array.
-const isDefined = (_object: unknown, value: unknown): boolean => value !== undefined;
-
 export class ProductAttributesDto {
   @ApiPropertyOptional({ example: 'linen', maxLength: 100 })
   @ValidateIf(isDefined)
