@@ -422,5 +422,61 @@ describe('Auth API (e2e, in-memory MongoDB)', () => {
 
       await getRoute('admin-only', admin.token).expect(200);
     });
+
+    // The admin routes check the CURRENT role in the database, not only the token
+    describe('admin route checks the role in the database', () => {
+      it('returns 403 for a token admin who was demoted to customer', async () => {
+        const admin = await createAdminToken();
+        await getRoute('admin-only', admin.token).expect(200);
+
+        await userModel.updateOne({ _id: admin.id }, { role: 'customer' });
+
+        await getRoute('admin-only', admin.token).expect(403);
+      });
+
+      it('returns 401 for a token admin whose user was deleted', async () => {
+        const admin = await createAdminToken();
+        await getRoute('admin-only', admin.token).expect(200);
+
+        await userModel.deleteOne({ _id: admin.id });
+
+        await getRoute('admin-only', admin.token).expect(401);
+      });
+
+      it('returns 403 for a user promoted to admin who still has the old customer token', async () => {
+        const registered = await registerAnn();
+        await userModel.updateOne({ _id: registered.user.id }, { role: 'admin' });
+
+        // The token claims "customer": a new login is needed to get an admin token
+        await getRoute('admin-only', registered.accessToken).expect(403);
+      });
+
+      it('returns 403 and does not trust a forged role: the token must be signed', async () => {
+        const registered = await registerAnn();
+        const forged = jwtService.sign(
+          { sub: registered.user.id, role: 'admin' },
+          { secret: 'x'.repeat(40) },
+        );
+
+        await getRoute('admin-only', forged).expect(401);
+      });
+
+      it('shows the role from the database to the code after the guard', async () => {
+        const admin = await createAdminToken();
+
+        const res = await getRoute('admin-only', admin.token).expect(200);
+
+        expect(res.body).toEqual({ userId: admin.id, role: 'admin' });
+      });
+
+      it('does NOT touch the database on routes without @Roles (token only)', async () => {
+        const admin = await createAdminToken();
+        await userModel.deleteOne({ _id: admin.id });
+
+        // A deleted user still passes the plain @Auth() route until the token expires:
+        // this is the accepted limit, only admin routes are checked in the database
+        await getRoute('any-user', admin.token).expect(200);
+      });
+    });
   });
 });

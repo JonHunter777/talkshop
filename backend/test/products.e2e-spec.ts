@@ -6,6 +6,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { ProductsService } from '../src/products/products.service';
 import { Product } from '../src/products/schemas/product.schema';
+import { createAdmin } from './helpers/create-admin';
 import { createTestApp } from './helpers/create-test-app';
 import { dropTestDb } from './helpers/test-db';
 
@@ -49,7 +50,8 @@ describe('Products API (e2e, in-memory MongoDB)', () => {
     productModel = app.get<Model<Product>>(getModelToken(Product.name));
     productsService = app.get(ProductsService);
     const jwt = app.get(JwtService);
-    adminToken = jwt.sign({ sub: new Types.ObjectId().toString(), role: 'admin' });
+    // The admin must exist in the database: admin routes check the current role there
+    adminToken = (await createAdmin(app)).token;
     customerToken = jwt.sign({ sub: new Types.ObjectId().toString(), role: 'customer' });
   });
 

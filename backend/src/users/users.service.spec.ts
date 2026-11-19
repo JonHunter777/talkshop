@@ -20,6 +20,42 @@ function createFakes() {
 }
 
 describe('UsersService', () => {
+  describe('findRoleById', () => {
+    // findById(...).select(...).lean(...).exec(): the fake returns itself for each link
+    function createRoleFakes(result: { role: string } | null) {
+      const query = {
+        select: jest.fn().mockReturnThis(),
+        lean: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue(result),
+      };
+      const findById = jest.fn().mockReturnValue(query);
+      const model = { findById } as unknown as Model<User>;
+      return { service: new UsersService(model), query, findById };
+    }
+
+    it('returns the role and selects ONLY the role field', async () => {
+      const { service, query, findById } = createRoleFakes({ role: 'admin' });
+
+      await expect(service.findRoleById(VALID_ID)).resolves.toBe('admin');
+
+      expect(findById).toHaveBeenCalledWith(VALID_ID);
+      expect(query.select).toHaveBeenCalledWith('role');
+    });
+
+    it('returns null for a user that does not exist', async () => {
+      const { service } = createRoleFakes(null);
+
+      await expect(service.findRoleById(VALID_ID)).resolves.toBeNull();
+    });
+
+    it('returns null for a malformed id without querying the database', async () => {
+      const { service, findById } = createRoleFakes({ role: 'admin' });
+
+      await expect(service.findRoleById('not-an-id')).resolves.toBeNull();
+      expect(findById).not.toHaveBeenCalled();
+    });
+  });
+
   describe('create', () => {
     it('normalizes the email (trim + lowercase) before saving', async () => {
       const { service, create } = createFakes();

@@ -1,6 +1,7 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import type { Role } from '../common/constants/roles';
 import { isDuplicateKeyError } from '../common/utils/mongo-errors';
 import { isObjectIdString } from '../common/utils/object-id';
 import { User, UserDocument } from './schemas/user.schema';
@@ -43,6 +44,17 @@ export class UsersService {
       query.select('+passwordHash');
     }
     return query.exec();
+  }
+
+  // The CURRENT role of a user, straight from the database (for admin-route checks: the role
+  // in a JWT can be up to an hour old). Reads only `role`: no hash, no email, no other fields.
+  // Returns null if the user does not exist (deleted) or the id is malformed.
+  async findRoleById(id: string): Promise<Role | null> {
+    if (!isObjectIdString(id)) {
+      return null;
+    }
+    const user = await this.userModel.findById(id).select('role').lean<{ role: Role }>().exec();
+    return user?.role ?? null;
   }
 
   async findById(id: string): Promise<UserDocument | null> {
