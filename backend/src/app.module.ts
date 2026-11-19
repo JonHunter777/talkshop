@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { DEFAULT_THROTTLE_LIMIT, DEFAULT_THROTTLE_TTL_MS } from './common/constants/throttle';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { validateEnv } from './config/env.validation';
 import { AuthModule } from './auth/auth.module';
 import { CartModule } from './cart/cart.module';
@@ -28,6 +29,10 @@ import { UsersModule } from './users/users.module';
     CartModule,
   ],
   // Global guard: every route is rate-limited unless it opts out
-  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    // Global exception filter: Mongoose errors -> 400/409, unknown errors -> clean 500
+    { provide: APP_FILTER, useClass: AllExceptionsFilter },
+  ],
 })
 export class AppModule {}
