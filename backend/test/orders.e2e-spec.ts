@@ -143,7 +143,8 @@ describe('Orders API (e2e, in-memory MongoDB)', () => {
       expect.arrayContaining([
         expect.objectContaining({ key: { orderNumber: 1 }, unique: true }),
         expect.objectContaining({ key: { userId: 1, createdAt: -1, _id: -1 } }),
-        expect.objectContaining({ key: { status: 1, createdAt: -1 } }),
+        expect.objectContaining({ key: { status: 1, createdAt: -1, _id: -1 } }),
+        expect.objectContaining({ key: { createdAt: -1, _id: -1 } }),
       ]),
     );
   });

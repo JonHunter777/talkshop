@@ -58,6 +58,12 @@ export class OrderResponseDto {
   @ApiPropertyOptional()
   note?: string;
 
+  @ApiPropertyOptional({
+    example: '665f1c2e8a1b2c3d4e5f6a7b',
+    description: 'The owner of the order. Present only in admin responses.',
+  })
+  userId?: string;
+
   @ApiProperty()
   createdAt!: Date;
 

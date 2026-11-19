@@ -94,5 +94,10 @@ OrderSchema.index({ orderNumber: 1 }, { unique: true });
 // forces an in-memory sort. Order of fields: equality (userId), then the sort fields.
 OrderSchema.index({ userId: 1, createdAt: -1, _id: -1 });
 
-// Serves: the admin list filtered by status, newest first (step 8).
-OrderSchema.index({ status: 1, createdAt: -1 });
+// Serves: the admin list (GET /orders/all) with a status filter, newest first.
+// Same field order rule as above: equality (status), then the sort fields incl. the tie-breaker.
+OrderSchema.index({ status: 1, createdAt: -1, _id: -1 });
+
+// Serves: the admin list WITHOUT a status filter, newest first. The indexes above start with
+// userId or status, so they cannot give this order without sorting the whole collection in memory.
+OrderSchema.index({ createdAt: -1, _id: -1 });

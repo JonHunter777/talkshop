@@ -27,6 +27,11 @@ export interface OrderView {
   updatedAt: Date;
 }
 
+// What an admin sees: the same order plus its owner
+export interface AdminOrderView extends OrderView {
+  userId: string;
+}
+
 // Why one cart line cannot be ordered (part of the 409 response)
 export type StockProblemReason = 'not_found' | 'insufficient_stock';
 

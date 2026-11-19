@@ -7,7 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
-import { Connection, Model } from 'mongoose';
+import { Connection, FilterQuery, Model } from 'mongoose';
 import { CartService } from '../cart/cart.service';
 import { CURRENCY, MAX_ORDER_NUMBER_ATTEMPTS } from '../common/constants/shop';
 import { buildPaginated, getSkip, Paginated } from '../common/dto/paginated-response';
@@ -15,9 +15,16 @@ import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { isDuplicateKeyError } from '../common/utils/mongo-errors';
 import { isObjectIdString } from '../common/utils/object-id';
 import { ProductsService } from '../products/products.service';
+import { AdminOrderQueryDto } from './dto/admin-order-query.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { ORDER_NUMBER_GENERATOR, type OrderNumberGenerator } from './order-number';
-import type { OrderItemView, OrderRecord, OrderView, StockProblem } from './orders.types';
+import type {
+  AdminOrderView,
+  OrderItemView,
+  OrderRecord,
+  OrderView,
+  StockProblem,
+} from './orders.types';
 import { Order, OrderItem } from './schemas/order.schema';
 
 // Maps a lean record to the shape that is returned by the API
@@ -46,6 +53,14 @@ export function toOrderView(order: OrderRecord): OrderView {
     updatedAt: order.updatedAt,
   };
 }
+
+export function toAdminOrderView(order: OrderRecord): AdminOrderView {
+  return { ...toOrderView(order), userId: order.userId.toString() };
+}
+
+// Newest first. `_id` is only a tie-breaker for stable pagination; the indexes in order.schema.ts
+// contain it, otherwise the database would have to sort in memory.
+const NEWEST_FIRST = { createdAt: -1, _id: -1 } as const;
 
 @Injectable()
 export class OrdersService {
@@ -93,8 +108,7 @@ export class OrdersService {
     const [records, total] = await Promise.all([
       this.orderModel
         .find(filter)
-        // _id is only a tie-breaker for stable pagination
-        .sort({ createdAt: -1, _id: -1 })
+        .sort(NEWEST_FIRST)
         .skip(getSkip(page, limit))
         .limit(limit)
         .lean<OrderRecord[]>()
@@ -114,6 +128,40 @@ export class OrdersService {
       throw new NotFoundException('Order not found');
     }
     return toOrderView(record);
+  }
+
+  // --- Admin methods. The controller routes are protected by @Roles('admin'), and RolesGuard
+  // --- confirms the role in the database; this service never looks at roles itself.
+
+  // The orders of ALL users, optionally only one status, newest first.
+  // Which index serves which query: see the indexes in order.schema.ts (checked with explain
+  // in the e2e tests: no in-memory SORT either with or without the status filter).
+  async findAll(query: AdminOrderQueryDto): Promise<Paginated<AdminOrderView>> {
+    const { page, limit, status } = query;
+    const filter: FilterQuery<Order> = status ? { status } : {};
+    const [records, total] = await Promise.all([
+      this.orderModel
+        .find(filter)
+        .sort(NEWEST_FIRST)
+        .skip(getSkip(page, limit))
+        .limit(limit)
+        .lean<OrderRecord[]>()
+        .exec(),
+      // countDocuments without a filter counts the whole collection: fine for this size
+      this.orderModel.countDocuments(filter).exec(),
+    ]);
+    return buildPaginated(records.map(toAdminOrderView), total, { page, limit });
+  }
+
+  // Any order by id (no ownership condition), with its owner
+  async findAnyById(orderId: string): Promise<AdminOrderView> {
+    const record = isObjectIdString(orderId)
+      ? await this.orderModel.findById(orderId).lean<OrderRecord>().exec()
+      : null;
+    if (!record) {
+      throw new NotFoundException('Order not found');
+    }
+    return toAdminOrderView(record);
   }
 
   // One transaction. EVERY database call inside it takes `session`: a call without it would
