@@ -58,17 +58,31 @@ export class OrderResponseDto {
   @ApiPropertyOptional()
   note?: string;
 
-  @ApiPropertyOptional({
-    example: '665f1c2e8a1b2c3d4e5f6a7b',
-    description: 'The owner of the order. Present only in admin responses.',
-  })
-  userId?: string;
-
   @ApiProperty()
   createdAt!: Date;
 
   @ApiProperty()
   updatedAt!: Date;
+}
+
+// What an admin gets from /orders/all and /orders/all/:id: the same order plus its owner
+export class AdminOrderResponseDto extends OrderResponseDto {
+  @ApiProperty({ example: '665f1c2e8a1b2c3d4e5f6a7b', description: 'The owner of the order' })
+  userId!: string;
+}
+
+export class PaginatedAdminOrdersDto {
+  @ApiProperty({ type: [AdminOrderResponseDto] })
+  items!: AdminOrderResponseDto[];
+
+  @ApiProperty({ example: 42 })
+  total!: number;
+
+  @ApiProperty({ example: 1 })
+  page!: number;
+
+  @ApiProperty({ example: 20 })
+  limit!: number;
 }
 
 export class PaginatedOrdersDto {

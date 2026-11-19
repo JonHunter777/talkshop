@@ -207,4 +207,24 @@ export class ProductsService {
       .exec();
     return result.modifiedCount === 1;
   }
+
+  // Gives stock back (order cancellation): one atomic `$inc`, no read-modify-write.
+  // Returns false if the product does not exist any more (it was deleted): the caller skips
+  // such a line. Inside a transaction the caller MUST pass the session.
+  async incrementStock(
+    productId: string,
+    quantity: number,
+    session?: ClientSession,
+  ): Promise<boolean> {
+    if (!Number.isInteger(quantity) || quantity < 1) {
+      throw new BadRequestException('quantity must be a positive integer');
+    }
+    if (!isObjectIdString(productId)) {
+      return false;
+    }
+    const result = await this.productModel
+      .updateOne({ _id: productId }, { $inc: { stock: quantity } }, { session })
+      .exec();
+    return result.matchedCount === 1;
+  }
 }

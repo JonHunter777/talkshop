@@ -458,6 +458,38 @@ describe('Products API (e2e, in-memory MongoDB)', () => {
       expect((await productModel.findById(p.id as string))?.stock).toBe(5);
     });
 
+    it('incrementStock adds to the stock and returns true', async () => {
+      const p = await seed({ stock: 5 });
+
+      expect(await productsService.incrementStock(p.id as string, 3)).toBe(true);
+
+      expect((await productModel.findById(p.id as string))?.stock).toBe(8);
+    });
+
+    it('incrementStock returns false for an unknown or malformed product id', async () => {
+      expect(await productsService.incrementStock(new Types.ObjectId().toString(), 1)).toBe(false);
+      expect(await productsService.incrementStock('nope', 1)).toBe(false);
+    });
+
+    it('incrementStock rejects a non-positive or fractional quantity', async () => {
+      const p = await seed({ stock: 5 });
+
+      await expect(productsService.incrementStock(p.id as string, 0)).rejects.toThrow();
+      await expect(productsService.incrementStock(p.id as string, -2)).rejects.toThrow();
+      await expect(productsService.incrementStock(p.id as string, 1.5)).rejects.toThrow();
+      expect((await productModel.findById(p.id as string))?.stock).toBe(5);
+    });
+
+    it('incrementStock does not lose updates under parallel calls', async () => {
+      const p = await seed({ stock: 0 });
+
+      await Promise.all(
+        Array.from({ length: 10 }, () => productsService.incrementStock(p.id as string, 2)),
+      );
+
+      expect((await productModel.findById(p.id as string))?.stock).toBe(20);
+    });
+
     it('never oversells: stock 1 and two parallel decrements give one success', async () => {
       const p = await seed({ stock: 1 });
 

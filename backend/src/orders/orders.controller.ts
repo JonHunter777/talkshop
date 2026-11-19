@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiConflictResponse,
@@ -19,16 +19,20 @@ import type { AuthUser } from '../common/types/auth-user';
 import { AdminOrderQueryDto } from './dto/admin-order-query.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
 import {
+  AdminOrderResponseDto,
   CheckoutConflictDto,
   OrderResponseDto,
+  PaginatedAdminOrdersDto,
   PaginatedOrdersDto,
 } from './dto/order-response.dto';
+import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { OrdersService } from './orders.service';
 import type { AdminOrderView, OrderView } from './orders.types';
 
-// Every route needs a valid token and works only with the orders of the user from the JWT.
-// (The admin routes `GET /orders/all` and `PATCH /orders/:id/status` come in step 8;
-// `all` must be declared BEFORE `:id`.)
+// Every route needs a valid token. The customer routes (POST /, GET /, GET /:id) work only with
+// the orders of the user from the JWT, whatever the role. The admin routes (`all`, `all/:id`,
+// `:id/status`, `:id/cancel`) have @Roles('admin'): RolesGuard confirms the role in the database.
+// `all` and `all/:id` are declared BEFORE `:id`.
 @ApiTags('orders')
 @Auth()
 @Controller('orders')
@@ -65,7 +69,7 @@ export class OrdersController {
   @Roles('admin')
   @ApiForbiddenResponse({ description: 'Requires role: admin' })
   @ApiOperation({ summary: 'List the orders of all users, newest first (admin)' })
-  @ApiOkResponse({ type: PaginatedOrdersDto })
+  @ApiOkResponse({ type: PaginatedAdminOrdersDto })
   @ApiBadRequestResponse({ description: 'Invalid query parameters' })
   findAll(@Query() query: AdminOrderQueryDto): Promise<Paginated<AdminOrderView>> {
     return this.ordersService.findAll(query);
@@ -75,11 +79,49 @@ export class OrdersController {
   @Roles('admin')
   @ApiForbiddenResponse({ description: 'Requires role: admin' })
   @ApiOperation({ summary: 'Get any order with its owner (admin)' })
-  @ApiOkResponse({ type: OrderResponseDto })
+  @ApiOkResponse({ type: AdminOrderResponseDto })
   @ApiBadRequestResponse({ description: 'Invalid id' })
   @ApiNotFoundResponse({ description: 'Order not found' })
   findAnyById(@Param('id', ParseObjectIdPipe) id: string): Promise<AdminOrderView> {
     return this.ordersService.findAnyById(id);
+  }
+
+  @Patch(':id/status')
+  @Roles('admin')
+  @ApiForbiddenResponse({ description: 'Requires role: admin' })
+  @ApiOperation({
+    summary: 'Move an order to the next status (admin)',
+    description:
+      'Allowed: pending -> processing -> shipped -> delivered, one step at a time. ' +
+      '`cancelled` is not accepted here: use POST /orders/:id/cancel.',
+  })
+  @ApiOkResponse({ type: AdminOrderResponseDto })
+  @ApiBadRequestResponse({ description: 'Invalid id or status (also `cancelled`)' })
+  @ApiNotFoundResponse({ description: 'Order not found' })
+  @ApiConflictResponse({ description: 'This transition is not allowed from the current status' })
+  updateStatus(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() dto: UpdateOrderStatusDto,
+  ): Promise<AdminOrderView> {
+    return this.ordersService.updateStatus(id, dto.status);
+  }
+
+  @Post(':id/cancel')
+  @HttpCode(200)
+  @Roles('admin')
+  @ApiForbiddenResponse({ description: 'Requires role: admin' })
+  @ApiOperation({
+    summary: 'Cancel an order and return its items to stock (admin)',
+    description:
+      'Only from pending or processing, in one transaction. Items of deleted products are ' +
+      'skipped. A repeated cancel returns 409 and does not return the stock again.',
+  })
+  @ApiOkResponse({ type: AdminOrderResponseDto })
+  @ApiBadRequestResponse({ description: 'Invalid id' })
+  @ApiNotFoundResponse({ description: 'Order not found' })
+  @ApiConflictResponse({ description: 'The order cannot be cancelled in its current status' })
+  cancel(@Param('id', ParseObjectIdPipe) id: string): Promise<AdminOrderView> {
+    return this.ordersService.cancel(id);
   }
 
   @Get(':id')
