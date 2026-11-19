@@ -121,6 +121,37 @@ describe('Global exception filter (e2e)', () => {
     expect(errorLog).toHaveBeenCalledWith('db password hunter2 leaked', expect.any(String));
   });
 
+  it('logs an unknown error exactly once (no second log from the base filter)', async () => {
+    await get('unknown');
+
+    // Nest's BaseExceptionFilter logs unknown errors itself, through a static logger that shares
+    // Logger.prototype. Our filter turns every error into an HttpException before calling it,
+    // so that branch is never reached and only our own log line remains.
+    expect(errorLog).toHaveBeenCalledTimes(1);
+  });
+
+  describe('errors from the HTTP layer (http-errors, body-parser)', () => {
+    it('returns 400 for a malformed JSON body, not 500', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/api/auth/login')
+        .set('Content-Type', 'application/json')
+        .send('{"email": ');
+
+      expect(res.status).toBe(400);
+      expect(errorLog).not.toHaveBeenCalled();
+    });
+
+    it('returns 413 for a body that is too large, not 500', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/api/auth/login')
+        .set('Content-Type', 'application/json')
+        .send(JSON.stringify({ email: 'a'.repeat(300_000) }));
+
+      expect(res.status).toBe(413);
+      expect(errorLog).not.toHaveBeenCalled();
+    });
+  });
+
   it('returns 404 for an unknown route (Nest NotFoundException is not changed)', async () => {
     const res = await request(app.getHttpServer()).get('/api/does-not-exist');
 

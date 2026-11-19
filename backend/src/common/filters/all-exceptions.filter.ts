@@ -1,3 +1,4 @@
+import { STATUS_CODES } from 'node:http';
 import {
   ArgumentsHost,
   BadRequestException,
@@ -16,6 +17,7 @@ import { isDuplicateKeyError } from '../utils/mongo-errors';
 // - HttpException (400, 401, 403, 404, 409, 429 ...): passed on UNCHANGED.
 // - Mongoose ValidationError / CastError: the client sent something the DB layer rejects -> 400.
 // - E11000 (unique index): 409.
+// - 4xx errors of the HTTP layer (http-errors: too large body, bad content type): status kept.
 // - Anything else: 500 with a generic text. The real cause and the stack go to the server log
 //   only, never to the client.
 //
@@ -51,6 +53,14 @@ export class AllExceptionsFilter extends BaseExceptionFilter {
       return new ConflictException('Duplicate value');
     }
 
+    // Client errors from the HTTP layer (the "http-errors" library used by body-parser):
+    // 413 payload too large, 415 unsupported media type, 400 bad JSON ... Keep their status,
+    // as plain Nest does. 5xx stays below: those are real server errors and get a generic 500.
+    const clientError = this.asHttpClientError(exception);
+    if (clientError) {
+      return clientError;
+    }
+
     if (exception instanceof Error) {
       this.logger.error(exception.message, exception.stack);
     } else {
@@ -61,5 +71,31 @@ export class AllExceptionsFilter extends BaseExceptionFilter {
       { statusCode: HttpStatus.INTERNAL_SERVER_ERROR, message: 'Internal server error' },
       HttpStatus.INTERNAL_SERVER_ERROR,
     );
+  }
+
+  // "http-errors" errors carry `statusCode`, `message` and `expose` (true for 4xx: the message
+  // may reach the client). Without `expose: true` only the standard text of the status is sent.
+  private asHttpClientError(exception: unknown): HttpException | null {
+    if (typeof exception !== 'object' || exception === null) {
+      return null;
+    }
+    const { statusCode, message, expose } = exception as {
+      statusCode?: unknown;
+      message?: unknown;
+      expose?: unknown;
+    };
+    if (
+      typeof statusCode !== 'number' ||
+      !Number.isInteger(statusCode) ||
+      statusCode < 400 ||
+      statusCode > 499 ||
+      typeof message !== 'string'
+    ) {
+      return null;
+    }
+    // Allow-list: the message is sent only if the error explicitly says it is safe to show
+    // (`expose === true`). Anything else gets the standard text of the status.
+    const text = expose === true ? message : (STATUS_CODES[statusCode] ?? 'Bad Request');
+    return new HttpException({ statusCode, message: text }, statusCode);
   }
 }

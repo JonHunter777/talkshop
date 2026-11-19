@@ -134,6 +134,83 @@ describe('AllExceptionsFilter', () => {
     });
   });
 
+  describe('errors from the HTTP layer (http-errors)', () => {
+    const httpError = (statusCode: number, message: string, expose?: boolean) =>
+      Object.assign(new Error(message), {
+        statusCode,
+        ...(expose === undefined ? {} : { expose }),
+      });
+
+    it('keeps the status and message of a 4xx error that has expose: true', () => {
+      const { run } = setup();
+
+      const reply = run(httpError(413, 'request entity too large', true));
+
+      expect(reply.status).toBe(413);
+      expect(reply.body).toEqual({ statusCode: 413, message: 'request entity too large' });
+      expect(errorLog).not.toHaveBeenCalled();
+    });
+
+    it('sends only the standard status text when expose is false', () => {
+      const { run } = setup();
+
+      const reply = run(httpError(400, 'internal detail: /srv/app/secret.txt', false));
+
+      expect(reply.status).toBe(400);
+      expect(reply.body).toEqual({ statusCode: 400, message: 'Bad Request' });
+    });
+
+    // Allow-list: a foreign error shaped like http-errors but without `expose: true`
+    // must not get its message to the client.
+    it('sends only the standard status text when there is no expose field', () => {
+      const { run } = setup();
+
+      const reply = run(httpError(413, 'secret detail from some library'));
+
+      expect(reply.status).toBe(413);
+      expect(reply.body).toEqual({ statusCode: 413, message: 'Payload Too Large' });
+      expect(JSON.stringify(reply.body)).not.toContain('secret');
+    });
+
+    it.each([
+      [400, 400],
+      [499, 499],
+    ])('treats statusCode %i as a client error', (statusCode, expected) => {
+      const { run } = setup();
+
+      expect(run(httpError(statusCode, 'x', true)).status).toBe(expected);
+    });
+
+    describe('values that are NOT a 4xx http error become a generic 500 with a log', () => {
+      it.each([
+        ['statusCode 399', { statusCode: 399, message: 'x', expose: true }],
+        ['statusCode 500', { statusCode: 500, message: 'x', expose: true }],
+        ['a non-integer-like string statusCode', { statusCode: 'abc', message: 'x', expose: true }],
+        ['a fractional statusCode', { statusCode: 450.5, message: 'x', expose: true }],
+        ['a non-string message', { statusCode: 400, message: 123, expose: true }],
+        ['an undefined message', { statusCode: 400, message: undefined, expose: true }],
+      ])('%s', (_name, fields) => {
+        const { run } = setup();
+
+        const reply = run(Object.assign(new Error('real cause'), fields));
+
+        expect(reply.status).toBe(500);
+        expect(reply.body).toEqual({ statusCode: 500, message: 'Internal server error' });
+        expect(errorLog).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it('treats a 5xx http error as a server error: generic 500 and a log', () => {
+      const { run } = setup();
+
+      const reply = run(httpError(503, 'upstream down at 10.0.0.5'));
+
+      expect(reply.status).toBe(500);
+      expect(reply.body).toEqual({ statusCode: 500, message: 'Internal server error' });
+      expect(errorLog).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('unknown errors', () => {
     it('returns a generic 500 without the message or the stack, and logs the cause', () => {
       const error = new Error('connection to db-host with password hunter2 failed');
