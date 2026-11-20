@@ -10,6 +10,7 @@ import {
   MinLength,
   validateSync,
 } from 'class-validator';
+import { CorsOriginsError, parseCorsOrigins } from './cors-origins';
 
 export class EnvironmentVariables {
   @IsInt()
@@ -48,11 +49,22 @@ export function validateEnv(config: Record<string, unknown>): EnvironmentVariabl
     exposeDefaultValues: true,
   });
   const errors = validateSync(instance);
-  if (errors.length > 0) {
-    const details = errors
-      .map((e) => `${e.property}: ${Object.values(e.constraints ?? {}).join(', ')}`)
-      .join('; ');
-    throw new Error(`Invalid environment variables -> ${details}`);
+  const details = errors.map(
+    (e) => `${e.property}: ${Object.values(e.constraints ?? {}).join(', ')}`,
+  );
+  // Simpler than a custom decorator: the rules need NODE_ENV, so we check after validateSync.
+  // Only when both fields are valid, otherwise the error is already reported above.
+  const failed = new Set(errors.map((e) => e.property));
+  if (!failed.has('CORS_ORIGIN') && !failed.has('NODE_ENV')) {
+    try {
+      parseCorsOrigins(instance.CORS_ORIGIN, instance.NODE_ENV);
+    } catch (error) {
+      if (!(error instanceof CorsOriginsError)) throw error;
+      details.push(`CORS_ORIGIN: ${error.message}`);
+    }
+  }
+  if (details.length > 0) {
+    throw new Error(`Invalid environment variables -> ${details.join('; ')}`);
   }
   return instance;
 }

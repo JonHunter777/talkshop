@@ -1,10 +1,11 @@
 // Order matters: test-config must run before AppModule is imported (see its comment).
 import './test-config';
-import { INestApplication, Type, ValidationPipe } from '@nestjs/common';
+import { INestApplication, Type } from '@nestjs/common';
 import { Test, TestingModuleBuilder } from '@nestjs/testing';
 import { getOptionsToken } from '@nestjs/throttler';
 import { App } from 'supertest/types';
 import { AppModule } from '../../src/app.module';
+import { configureApp } from '../../src/app.setup';
 import { syncAllIndexes } from './test-db';
 
 export interface CreateTestAppOptions {
@@ -16,8 +17,8 @@ export interface CreateTestAppOptions {
   configure?: (builder: TestingModuleBuilder) => void;
 }
 
-// Builds the app like src/main.ts does (prefix, ValidationPipe) on the in-memory DB.
-// CORS and Swagger are not needed for API tests.
+// Builds the app like src/main.ts does (configureApp: prefix, ValidationPipe, helmet, CORS)
+// on the in-memory DB. Swagger is not needed for API tests.
 export async function createTestApp(
   options: CreateTestAppOptions = {},
 ): Promise<INestApplication<App>> {
@@ -37,14 +38,7 @@ export async function createTestApp(
   const moduleRef = await builder.compile();
 
   const app = moduleRef.createNestApplication<INestApplication<App>>();
-  app.setGlobalPrefix('api');
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
+  configureApp(app);
   await app.init();
   await syncAllIndexes(app);
   return app;

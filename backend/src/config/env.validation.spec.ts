@@ -124,5 +124,54 @@ describe('validateEnv', () => {
       expect(message).toMatch(/NODE_ENV/);
       expect(message).not.toContain(FAKE_HOST);
     });
+
+    describe('CORS_ORIGIN rules', () => {
+      const CORS_MARKER = 'marker-host.example.invalid';
+
+      it('accepts a comma-separated list', () => {
+        const raw = 'http://localhost:5173, https://shop.example.invalid';
+        const run = () => validateEnv({ MONGODB_URI: fakeUri, JWT_SECRET, CORS_ORIGIN: raw });
+
+        expect(run).not.toThrow();
+        expect(run().CORS_ORIGIN).toBe(raw);
+      });
+
+      it.each([
+        ['a wildcard', '*'],
+        ['a duplicate', `https://${CORS_MARKER},https://${CORS_MARKER}/`],
+        ['a path', `https://${CORS_MARKER}/api`],
+      ])('rejects %s and does not leak the value', (_name, corsOrigin) => {
+        const message = getErrorMessage({
+          MONGODB_URI: fakeUri,
+          JWT_SECRET,
+          CORS_ORIGIN: corsOrigin,
+        });
+        expect(message).toMatch(/CORS_ORIGIN/);
+        expect(message).not.toContain(CORS_MARKER);
+        expect(message).not.toContain(FAKE_HOST);
+      });
+
+      it('rejects http for a non-localhost host in production', () => {
+        const message = getErrorMessage({
+          MONGODB_URI: fakeUri,
+          JWT_SECRET,
+          NODE_ENV: 'production',
+          CORS_ORIGIN: `http://${CORS_MARKER}`,
+        });
+        expect(message).toMatch(/CORS_ORIGIN/);
+        expect(message).not.toContain(CORS_MARKER);
+      });
+
+      it('does not report a CORS error when NODE_ENV is invalid (only NODE_ENV)', () => {
+        const message = getErrorMessage({
+          MONGODB_URI: fakeUri,
+          JWT_SECRET,
+          NODE_ENV: 'staging',
+          CORS_ORIGIN: '*',
+        });
+        expect(message).toMatch(/NODE_ENV/);
+        expect(message).not.toMatch(/CORS_ORIGIN/);
+      });
+    });
   });
 });
