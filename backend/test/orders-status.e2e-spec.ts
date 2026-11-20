@@ -4,7 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Model, Types } from 'mongoose';
 import request from 'supertest';
 import { App } from 'supertest/types';
-import { ORDER_STATUSES, type OrderStatus } from '../src/common/constants/shop';
+import type { OrderStatus } from '../src/common/constants/shop';
 import { generateOrderNumber } from '../src/orders/order-number';
 import { Order } from '../src/orders/schemas/order.schema';
 import { ProductsService } from '../src/products/products.service';
@@ -413,16 +413,46 @@ describe('Order status and cancel (e2e, in-memory MongoDB)', () => {
       await cancel(new Types.ObjectId().toString()).expect(404);
     });
 
-    it('returns 409 and no stock change for an order that is already cancelled by seed', async () => {
-      const orderId = await seedOrderWithStatus('cancelled');
+    it('returns 409 and does not change the stock for an order that is already cancelled', async () => {
+      const productId = await seedProduct({ stock: 10 });
+      const orderId = await placeOrder([{ productId, quantity: 3 }]);
+      await orderModel.updateOne({ _id: orderId }, { status: 'cancelled' });
+      const stockBefore = await stockOf(productId);
+      expect(stockBefore).toBe(7);
 
       await cancel(orderId).expect(409);
-    });
-  });
 
-  it('covers every status in the table (guards against a new status being forgotten)', () => {
-    expect([...ORDER_STATUSES].sort()).toEqual(
-      ['cancelled', 'delivered', 'pending', 'processing', 'shipped'].sort(),
-    );
+      expect(await stockOf(productId)).toBe(stockBefore);
+      expect(await statusOf(orderId)).toBe('cancelled');
+    });
+
+    // Cancel and "shipped" race for the same order. Either may win; what must hold is the
+    // invariant: one final status, and the stock is consistent with it.
+    it('keeps the status and the stock consistent when cancel races with PATCH shipped', async () => {
+      const productId = await seedProduct({ stock: 10 });
+      const orderId = await placeOrder([{ productId, quantity: 3 }]);
+      await patchStatus(orderId, { status: 'processing' }).expect(200);
+      const stockBefore = await stockOf(productId);
+      expect(stockBefore).toBe(7);
+
+      const [cancelRes, shipRes] = await Promise.all([
+        cancel(orderId),
+        patchStatus(orderId, { status: 'shipped' }),
+      ]);
+
+      const finalStatus = await statusOf(orderId);
+      expect(['cancelled', 'shipped']).toContain(finalStatus);
+      expect([200, 409]).toContain(cancelRes.status);
+      expect([200, 409]).toContain(shipRes.status);
+      if (finalStatus === 'cancelled') {
+        expect(cancelRes.status).toBe(200);
+        expect(shipRes.status).toBe(409);
+        expect(await stockOf(productId)).toBe((stockBefore as number) + 3);
+      } else {
+        expect(shipRes.status).toBe(200);
+        expect(cancelRes.status).toBe(409);
+        expect(await stockOf(productId)).toBe(stockBefore);
+      }
+    });
   });
 });

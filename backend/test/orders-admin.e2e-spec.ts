@@ -1,11 +1,12 @@
 import { INestApplication } from '@nestjs/common';
 import { getModelToken } from '@nestjs/mongoose';
 import { JwtService } from '@nestjs/jwt';
-import { Model, Types } from 'mongoose';
+import { FilterQuery, Model, Types } from 'mongoose';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import type { OrderStatus } from '../src/common/constants/shop';
 import { generateOrderNumber } from '../src/orders/order-number';
+import { NEWEST_FIRST } from '../src/orders/orders.service';
 import { Order } from '../src/orders/schemas/order.schema';
 import { User } from '../src/users/schemas/user.schema';
 import { createAdmin, type TestAdmin } from './helpers/create-admin';
@@ -26,6 +27,21 @@ interface ListBody {
   page: number;
   limit: number;
 }
+
+// A stage of the winning plan of an explain; a stage has `inputStage` or `inputStages`
+interface PlanStage {
+  stage: string;
+  indexName?: string;
+  inputStage?: PlanStage;
+  inputStages?: PlanStage[];
+}
+
+// The stage and all stages below it, as a flat list
+const collectStages = (stage: PlanStage): PlanStage[] => [
+  stage,
+  ...(stage.inputStage ? collectStages(stage.inputStage) : []),
+  ...(stage.inputStages ?? []).flatMap(collectStages),
+];
 
 const shipping = {
   fullName: 'Ivan Petrenko',
@@ -68,6 +84,7 @@ describe('Admin orders API (e2e, in-memory MongoDB)', () => {
   const seedOrder = async (
     userId: string,
     status: OrderStatus = 'pending',
+    note?: string,
   ): Promise<{ id: string; orderNumber: string }> => {
     const order = await orderModel.create({
       orderNumber: generateOrderNumber(),
@@ -84,6 +101,7 @@ describe('Admin orders API (e2e, in-memory MongoDB)', () => {
       totalCents: 1400,
       shipping,
       status,
+      ...(note !== undefined && { note }),
     });
     return { id: order.id as string, orderNumber: order.orderNumber };
   };
@@ -207,29 +225,99 @@ describe('Admin orders API (e2e, in-memory MongoDB)', () => {
         }
       });
 
-      it('reads the list without a status filter from an index, without a SORT stage', async () => {
-        const plan = await orderModel
-          .find({})
-          .sort({ createdAt: -1, _id: -1 })
-          .explain('queryPlanner');
+      // Same query as OrdersService.findAll (default page 1, limit 20 -> skip 0)
+      const explainList = async (filter: FilterQuery<Order>): Promise<PlanStage> => {
+        const plan = (await orderModel
+          .find(filter)
+          .sort(NEWEST_FIRST)
+          .skip(0)
+          .limit(20)
+          .explain('queryPlanner')) as unknown as { queryPlanner: { winningPlan: PlanStage } };
+        return plan.queryPlanner.winningPlan;
+      };
 
-        const text = JSON.stringify(plan);
-        expect(text).toContain('IXSCAN');
-        expect(text).not.toContain('"stage":"SORT"');
-        expect(text).not.toContain('"stage":"COLLSCAN"');
+      it('reads the list without a status filter from an index, without a SORT stage', async () => {
+        const winningPlan = await explainList({});
+
+        const stages = collectStages(winningPlan);
+        expect(stages.filter((s) => s.stage === 'IXSCAN').map((s) => s.indexName)).toEqual([
+          'createdAt_-1__id_-1',
+        ]);
+        expect(stages.map((s) => s.stage)).not.toContain('SORT');
+        expect(stages.map((s) => s.stage)).not.toContain('COLLSCAN');
       });
 
       it('reads the list with a status filter from an index, without a SORT stage', async () => {
-        const plan = await orderModel
-          .find({ status: 'shipped' })
-          .sort({ createdAt: -1, _id: -1 })
-          .explain('queryPlanner');
+        const winningPlan = await explainList({ status: 'shipped' });
 
-        const text = JSON.stringify(plan);
-        expect(text).toContain('IXSCAN');
-        expect(text).not.toContain('"stage":"SORT"');
-        expect(text).not.toContain('"stage":"COLLSCAN"');
+        const stages = collectStages(winningPlan);
+        expect(stages.filter((s) => s.stage === 'IXSCAN').map((s) => s.indexName)).toEqual([
+          'status_1_createdAt_-1__id_-1',
+        ]);
+        expect(stages.map((s) => s.stage)).not.toContain('SORT');
+        expect(stages.map((s) => s.stage)).not.toContain('COLLSCAN');
       });
+    });
+  });
+
+  // The admin view is the user view plus `userId`; no `_id` and no `__v`
+  describe('response shape (exact keys)', () => {
+    const adminKeys = [
+      'createdAt',
+      'currency',
+      'id',
+      'items',
+      'orderNumber',
+      'shipping',
+      'status',
+      'totalCents',
+      'updatedAt',
+      'userId',
+    ];
+
+    const expectAdminShape = (body: object, withNote: boolean): void => {
+      const order = body as {
+        items: object[];
+        shipping: object;
+      };
+      expect(Object.keys(body).sort()).toEqual(
+        withNote ? [...adminKeys, 'note'].sort() : adminKeys,
+      );
+      expect(Object.keys(order.items[0]).sort()).toEqual([
+        'name',
+        'priceCents',
+        'productId',
+        'quantity',
+        'slug',
+      ]);
+      expect(Object.keys(order.shipping).sort()).toEqual(['address', 'city', 'fullName', 'phone']);
+    };
+
+    it.each([
+      ['without a note', undefined, false],
+      ['with a note', 'Call before delivery', true],
+    ])(
+      'GET /orders/all returns list items with exactly the admin keys %s',
+      async (_n, note, withNote) => {
+        await seedOrder(newUserId(), 'pending', note);
+
+        const res = await api().get('/api/orders/all').set(auth(admin.token)).expect(200);
+
+        const list = res.body as ListBody;
+        expect(Object.keys(list).sort()).toEqual(['items', 'limit', 'page', 'total']);
+        expectAdminShape(list.items[0], withNote);
+      },
+    );
+
+    it.each([
+      ['without a note', undefined, false],
+      ['with a note', 'Call before delivery', true],
+    ])('GET /orders/all/:id returns exactly the admin keys %s', async (_name, note, withNote) => {
+      const order = await seedOrder(newUserId(), 'pending', note);
+
+      const res = await api().get(`/api/orders/all/${order.id}`).set(auth(admin.token)).expect(200);
+
+      expectAdminShape(res.body as object, withNote);
     });
   });
 

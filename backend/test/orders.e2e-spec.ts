@@ -10,6 +10,7 @@ import {
   ORDER_NUMBER_GENERATOR,
   ORDER_NUMBER_REGEX,
 } from '../src/orders/order-number';
+import { NEWEST_FIRST } from '../src/orders/orders.service';
 import { Order } from '../src/orders/schemas/order.schema';
 import { Product } from '../src/products/schemas/product.schema';
 import { createTestApp } from './helpers/create-test-app';
@@ -47,6 +48,21 @@ interface ConflictBody {
   message: string;
   items: { productId: string; reason: string; requested: number; available: number }[];
 }
+
+// A stage of the winning plan of an explain; a stage has `inputStage` or `inputStages`
+interface PlanStage {
+  stage: string;
+  indexName?: string;
+  inputStage?: PlanStage;
+  inputStages?: PlanStage[];
+}
+
+// The stage and all stages below it, as a flat list
+const collectStages = (stage: PlanStage): PlanStage[] => [
+  stage,
+  ...(stage.inputStage ? collectStages(stage.inputStage) : []),
+  ...(stage.inputStages ?? []).flatMap(collectStages),
+];
 
 const shipping = {
   fullName: 'Ivan Petrenko',
@@ -156,14 +172,20 @@ describe('Orders API (e2e, in-memory MongoDB)', () => {
       await checkout().expect(201);
     }
 
-    const plan = await orderModel
+    // Same query as OrdersService.findMine (default page 1, limit 20 -> skip 0)
+    const plan = (await orderModel
       .find({ userId })
-      .sort({ createdAt: -1, _id: -1 })
-      .explain('queryPlanner');
+      .sort(NEWEST_FIRST)
+      .skip(0)
+      .limit(20)
+      .explain('queryPlanner')) as unknown as { queryPlanner: { winningPlan: PlanStage } };
 
-    const text = JSON.stringify(plan);
-    expect(text).toContain('IXSCAN');
-    expect(text).not.toContain('"stage":"SORT"');
+    const stages = collectStages(plan.queryPlanner.winningPlan);
+    expect(stages.filter((s) => s.stage === 'IXSCAN').map((s) => s.indexName)).toEqual([
+      'userId_1_createdAt_-1__id_-1',
+    ]);
+    expect(stages.map((s) => s.stage)).not.toContain('SORT');
+    expect(stages.map((s) => s.stage)).not.toContain('COLLSCAN');
   });
 
   describe('authentication', () => {
@@ -573,6 +595,74 @@ describe('Orders API (e2e, in-memory MongoDB)', () => {
     it('returns 404 for an unknown id and 400 for a malformed one', async () => {
       await api().get(`/api/orders/${new Types.ObjectId().toString()}`).set(auth()).expect(404);
       await api().get('/api/orders/123').set(auth()).expect(400);
+    });
+  });
+
+  // The exact set of keys: a field that leaks (userId, _id, __v) or disappears breaks the test
+  describe('response shape (exact keys)', () => {
+    const baseKeys = [
+      'createdAt',
+      'currency',
+      'id',
+      'items',
+      'orderNumber',
+      'shipping',
+      'status',
+      'totalCents',
+      'updatedAt',
+    ];
+    const itemKeys = ['name', 'priceCents', 'productId', 'quantity', 'slug'];
+    const shippingKeys = ['address', 'city', 'fullName', 'phone'];
+
+    const expectShape = (body: OrderBody, withNote: boolean): void => {
+      expect(Object.keys(body).sort()).toEqual(withNote ? [...baseKeys, 'note'].sort() : baseKeys);
+      expect(Object.keys(body.items[0]).sort()).toEqual(itemKeys);
+      expect(Object.keys(body.shipping).sort()).toEqual(shippingKeys);
+    };
+
+    const placeOne = async (note?: string): Promise<OrderBody> => {
+      const productId = await seedProduct();
+      await addToCart(productId, 1);
+      const res = await checkout(note === undefined ? { shipping } : { shipping, note }).expect(
+        201,
+      );
+      return res.body as OrderBody;
+    };
+
+    it.each([
+      ['without a note', undefined, false],
+      ['with a note', 'Call before delivery', true],
+    ])('POST /orders returns exactly the user keys %s', async (_name, note, withNote) => {
+      const body = await placeOne(note);
+
+      expectShape(body, withNote);
+    });
+
+    it.each([
+      ['without a note', undefined, false],
+      ['with a note', 'Call before delivery', true],
+    ])(
+      'GET /orders returns list items with exactly the user keys %s',
+      async (_n, note, withNote) => {
+        await placeOne(note);
+
+        const res = await api().get('/api/orders').set(auth()).expect(200);
+
+        const list = res.body as ListBody;
+        expect(Object.keys(list).sort()).toEqual(['items', 'limit', 'page', 'total']);
+        expectShape(list.items[0], withNote);
+      },
+    );
+
+    it.each([
+      ['without a note', undefined, false],
+      ['with a note', 'Call before delivery', true],
+    ])('GET /orders/:id returns exactly the user keys %s', async (_name, note, withNote) => {
+      const placed = await placeOne(note);
+
+      const res = await api().get(`/api/orders/${placed.id}`).set(auth()).expect(200);
+
+      expectShape(res.body as OrderBody, withNote);
     });
   });
 });

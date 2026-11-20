@@ -62,7 +62,7 @@ export function toAdminOrderView(order: OrderRecord): AdminOrderView {
 
 // Newest first. `_id` is only a tie-breaker for stable pagination; the indexes in order.schema.ts
 // contain it, otherwise the database would have to sort in memory.
-const NEWEST_FIRST = { createdAt: -1, _id: -1 } as const;
+export const NEWEST_FIRST = { createdAt: -1, _id: -1 } as const;
 
 @Injectable()
 export class OrdersService {
