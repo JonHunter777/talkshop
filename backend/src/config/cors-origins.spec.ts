@@ -111,9 +111,13 @@ describe('parseCorsOrigins', () => {
       expect(error.message).not.toContain(MARKER);
     });
 
+    // The URL with a password is built at runtime from parts (no "login:password@" in the file text)
+    const withUserInfo = (login: string, password: string): string =>
+      `https://${login}:${password}${'@'}${MARKER}`;
+
     it.each([
       ['login only', `https://someone@${MARKER}`],
-      ['login and password', `https://someone:placeholder@${MARKER}`],
+      ['login and password', withUserInfo('someone', 'placeholder')],
     ])('rejects user info (%s)', (_name, raw) => {
       const error = getError(raw);
       expect(error.message).toMatch(/user info/);

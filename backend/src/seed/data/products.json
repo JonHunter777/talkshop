@@ -1,0 +1,437 @@
+[
+  {
+    "name": "Каструля з нержавіючої сталі 3 л",
+    "slug": "kastrulia-nerzhaviiucha-3l",
+    "description": "Каструля з товстим дном рівномірно прогріває їжу. Підходить для всіх типів плит, зокрема індукційних.",
+    "category": "kitchen",
+    "priceCents": 129900,
+    "stock": 34,
+    "images": ["https://placehold.co/800x800/png?text=kastrulia-nerzhaviiucha-3l"],
+    "attributes": { "material": "нержавіюча сталь", "size": "3 л", "color": "сріблястий" }
+  },
+  {
+    "name": "Сковорода з антипригарним покриттям 26 см",
+    "slug": "skovoroda-antyprygarna-26cm",
+    "description": "Легка сковорода для щоденного приготування. Завдяки покриттю їжа майже не прилипає, а мити її легко.",
+    "category": "kitchen",
+    "priceCents": 89900,
+    "stock": 52,
+    "images": [
+      "https://placehold.co/800x800/png?text=skovoroda-antyprygarna-26cm",
+      "https://placehold.co/800x800/png?text=skovoroda-antyprygarna-26cm-2"
+    ],
+    "attributes": { "material": "алюміній", "size": "26 см", "color": "чорний" }
+  },
+  {
+    "name": "Набір кухонних ножів із 5 предметів",
+    "slug": "nabir-nozhiv-5-predmetiv",
+    "description": "П'ять ножів різного призначення з гострими лезами та зручними ручками. У комплекті підставка.",
+    "category": "kitchen",
+    "priceCents": 149900,
+    "stock": 18,
+    "images": ["https://placehold.co/800x800/png?text=nabir-nozhiv-5-predmetiv"],
+    "attributes": { "material": "сталь і пластик", "color": "чорний" }
+  },
+  {
+    "name": "Бамбукова обробна дошка",
+    "slug": "doshka-obrobna-bambukova",
+    "description": "Міцна дошка для нарізання овочів і хліба. Має жолоб для соку та отвір для підвішування.",
+    "category": "kitchen",
+    "priceCents": 39900,
+    "stock": 76,
+    "images": ["https://placehold.co/800x800/png?text=doshka-obrobna-bambukova"],
+    "attributes": { "material": "бамбук", "size": "38x28 см" }
+  },
+  {
+    "name": "Скляний чайник для заварювання 1,2 л",
+    "slug": "chainyk-sklianyi-1-2l",
+    "description": "Прозорий чайник із ситечком, у якому добре видно колір напою. Розрахований на гарячу воду.",
+    "category": "kitchen",
+    "priceCents": 54900,
+    "stock": 0,
+    "images": ["https://placehold.co/800x800/png?text=chainyk-sklianyi-1-2l"],
+    "attributes": { "material": "жаростійке скло", "size": "1,2 л" }
+  },
+  {
+    "name": "Набір керамічних кухлів, 4 шт.",
+    "slug": "nabir-kukhliv-keramichnykh-4sht",
+    "description": "Чотири кухлі в спокійних відтінках для чаю та кави. Можна мити в посудомийній машині.",
+    "category": "kitchen",
+    "priceCents": 69900,
+    "stock": 41,
+    "images": ["https://placehold.co/800x800/png?text=nabir-kukhliv-keramichnykh-4sht"],
+    "attributes": { "material": "кераміка", "size": "350 мл", "color": "бежевий" }
+  },
+  {
+    "name": "Піднос для сервірування",
+    "slug": "pidnos-dlia-serviruvannia",
+    "description": "Невеликий піднос із бортиками, щоб подати сніданок або чай. Легкий та зручний у зберіганні.",
+    "category": "kitchen",
+    "priceCents": 24900,
+    "stock": 63,
+    "images": ["https://placehold.co/800x800/png?text=pidnos-dlia-serviruvannia"],
+    "attributes": {}
+  },
+  {
+    "name": "Вовняний килим 120x170 см",
+    "slug": "kylym-vovnianyi-120x170",
+    "description": "М'який килим із щільним ворсом для вітальні чи спальні. Стримана геометрична схема підходить до різних інтер'єрів.",
+    "category": "textile",
+    "priceCents": 289900,
+    "stock": 14,
+    "images": [
+      "https://placehold.co/800x800/png?text=kylym-vovnianyi-120x170",
+      "https://placehold.co/800x800/png?text=kylym-vovnianyi-120x170-2"
+    ],
+    "attributes": { "material": "вовна", "size": "120x170 см", "color": "сірий" }
+  },
+  {
+    "name": "Комплект постільної білизни полуторний",
+    "slug": "komplekt-postilnoi-bilyzny-polutornyi",
+    "description": "Бавовняний комплект із наволочками та простирадлом. Тканина приємна на дотик і не втрачає колір після прання.",
+    "category": "textile",
+    "priceCents": 199900,
+    "stock": 27,
+    "images": ["https://placehold.co/800x800/png?text=komplekt-postilnoi-bilyzny-polutornyi"],
+    "attributes": { "material": "бавовна", "size": "150x210 см", "color": "білий" }
+  },
+  {
+    "name": "Плед флісовий 130x170 см",
+    "slug": "pled-flisovyi-130x170",
+    "description": "Теплий і легкий плед для крісла або дивана. Швидко сохне й не потребує складного догляду.",
+    "category": "textile",
+    "priceCents": 79900,
+    "stock": 58,
+    "images": ["https://placehold.co/800x800/png?text=pled-flisovyi-130x170"],
+    "attributes": { "material": "поліестер", "size": "130x170 см", "color": "бордовий" }
+  },
+  {
+    "name": "Штори світлонепроникні, пара",
+    "slug": "shtory-svitlonepronyknivi-para",
+    "description": "Щільні штори затемнюють кімнату й допомагають краще спати. Кріпляться на вічка.",
+    "category": "textile",
+    "priceCents": 159900,
+    "stock": 22,
+    "images": ["https://placehold.co/800x800/png?text=shtory-svitlonepronyknivi-para"],
+    "attributes": { "material": "поліестер", "size": "140x250 см" }
+  },
+  {
+    "name": "Набір махрових рушників 3 шт.",
+    "slug": "nabir-rushnykiv-makhrovykh-3sht",
+    "description": "Три рушники різного розміру з густою махрою. Добре вбирають вологу та залишаються м'якими.",
+    "category": "textile",
+    "priceCents": 99900,
+    "stock": 3,
+    "images": ["https://placehold.co/800x800/png?text=nabir-rushnykiv-makhrovykh-3sht"],
+    "attributes": { "material": "бавовна", "color": "блакитний" }
+  },
+  {
+    "name": "Декоративна подушка з вишивкою",
+    "slug": "podushka-dekoratyvna-vyshyvka",
+    "description": "Подушка з акуратним візерунком, що додає дивану затишку. Знімна наволочка на блискавці.",
+    "category": "textile",
+    "priceCents": 44900,
+    "stock": 45,
+    "images": ["https://placehold.co/800x800/png?text=podushka-dekoratyvna-vyshyvka"],
+    "attributes": { "material": "льон", "size": "45x45 см", "color": "зелений" }
+  },
+  {
+    "name": "Скатертина лляна 140x180 см",
+    "slug": "skatertyna-lliana-140x180",
+    "description": "Скатертина з натурального льону для щоденних і святкових обідів. Після прасування виглядає охайно.",
+    "category": "textile",
+    "priceCents": 119900,
+    "stock": 19,
+    "images": ["https://placehold.co/800x800/png?text=skatertyna-lliana-140x180"],
+    "attributes": { "material": "льон", "size": "140x180 см" }
+  },
+  {
+    "name": "Керамічна ваза висока",
+    "slug": "vaza-keramichna-vysoka",
+    "description": "Ваза з матовою глазур'ю для сухоцвітів або великих гілок. Прикрасить комод чи підлогу біля вікна.",
+    "category": "decor",
+    "priceCents": 74900,
+    "stock": 31,
+    "images": ["https://placehold.co/800x800/png?text=vaza-keramichna-vysoka"],
+    "attributes": { "material": "кераміка", "size": "38 см", "color": "теракотовий" }
+  },
+  {
+    "name": "Настінне дзеркало кругле 60 см",
+    "slug": "dzerkalo-nastinne-kruhle-60cm",
+    "description": "Кругле дзеркало у тонкій рамі візуально розширює простір. Підходить для передпокою чи спальні.",
+    "category": "decor",
+    "priceCents": 184900,
+    "stock": 12,
+    "images": [
+      "https://placehold.co/800x800/png?text=dzerkalo-nastinne-kruhle-60cm",
+      "https://placehold.co/800x800/png?text=dzerkalo-nastinne-kruhle-60cm-2"
+    ],
+    "attributes": { "material": "метал і скло", "size": "60 см", "color": "чорний" }
+  },
+  {
+    "name": "Набір свічок ароматичних, 3 шт.",
+    "slug": "nabir-svichok-aromatychnykh-3sht",
+    "description": "Три свічки з м'яким ароматом ванілі й кедра. Рівномірно горять до тридцяти годин.",
+    "category": "decor",
+    "priceCents": 59900,
+    "stock": 70,
+    "images": ["https://placehold.co/800x800/png?text=nabir-svichok-aromatychnykh-3sht"],
+    "attributes": { "material": "соєвий віск" }
+  },
+  {
+    "name": "Фоторамка дерев'яна 21x30 см",
+    "slug": "fotoramka-dereviana-21x30",
+    "description": "Проста рама зі світлого дерева для улюблених знімків. Підходить для вертикального і горизонтального розміщення.",
+    "category": "decor",
+    "priceCents": 29900,
+    "stock": 80,
+    "images": ["https://placehold.co/800x800/png?text=fotoramka-dereviana-21x30"],
+    "attributes": { "material": "дерево", "size": "21x30 см", "color": "світлий дуб" }
+  },
+  {
+    "name": "Настінний годинник безшумний",
+    "slug": "hodynnyk-nastinnyi-bezshumnyi",
+    "description": "Годинник з плавним ходом, який не заважає вночі. Мінімалістичний циферблат легко читати здалеку.",
+    "category": "decor",
+    "priceCents": 64900,
+    "stock": 25,
+    "images": ["https://placehold.co/800x800/png?text=hodynnyk-nastinnyi-bezshumnyi"],
+    "attributes": { "material": "пластик і метал", "size": "30 см", "color": "білий" }
+  },
+  {
+    "name": "Декоративна статуетка пташка",
+    "slug": "statuetka-ptashka-dekoratyvna",
+    "description": "Невелика фігурка з кераміки для полиці або підвіконня. Додає інтер'єру легкий акцент.",
+    "category": "decor",
+    "priceCents": 4900,
+    "stock": 1,
+    "images": ["https://placehold.co/800x800/png?text=statuetka-ptashka-dekoratyvna"],
+    "attributes": { "material": "кераміка" }
+  },
+  {
+    "name": "Кашпо плетене з бавовняного шнура",
+    "slug": "kashpo-pletene-shnur",
+    "description": "Кашпо для кімнатних рослин ручної роботи. Підійде для горщика діаметром до 15 см.",
+    "category": "decor",
+    "priceCents": 34900,
+    "stock": 38,
+    "images": ["https://placehold.co/800x800/png?text=kashpo-pletene-shnur"],
+    "attributes": {}
+  },
+  {
+    "name": "Журнальний столик круглий",
+    "slug": "stolyk-zhurnalnyi-kruhlyi",
+    "description": "Компактний столик із металевими ніжками та стільницею під дерево. Зручний для чашки кави чи книжки.",
+    "category": "furniture",
+    "priceCents": 349900,
+    "stock": 16,
+    "images": [
+      "https://placehold.co/800x800/png?text=stolyk-zhurnalnyi-kruhlyi",
+      "https://placehold.co/800x800/png?text=stolyk-zhurnalnyi-kruhlyi-2"
+    ],
+    "attributes": { "material": "МДФ і метал", "size": "70x45 см", "color": "горіх" }
+  },
+  {
+    "name": "Обідній стілець м'який",
+    "slug": "stilets-obidnii-miakyi",
+    "description": "Стілець із зручним сидінням і прямою спинкою. Оббивка легко чиститься вологою серветкою.",
+    "category": "furniture",
+    "priceCents": 249900,
+    "stock": 40,
+    "images": ["https://placehold.co/800x800/png?text=stilets-obidnii-miakyi"],
+    "attributes": { "material": "дерево і тканина", "color": "сірий" }
+  },
+  {
+    "name": "Книжкова шафа 5 полиць",
+    "slug": "shafa-knyzhkova-5-polyts",
+    "description": "Висока шафа з відкритими полицями для книжок і декору. Збирається за схемою з комплекту.",
+    "category": "furniture",
+    "priceCents": 459900,
+    "stock": 9,
+    "images": ["https://placehold.co/800x800/png?text=shafa-knyzhkova-5-polyts"],
+    "attributes": { "material": "ДСП", "size": "80x180x30 см", "color": "дуб" }
+  },
+  {
+    "name": "Письмовий стіл компактний",
+    "slug": "stil-pysmovyi-kompaktnyi",
+    "description": "Невеликий стіл для роботи чи навчання біля вікна. Має шухляду для дрібниць і кабельний отвір.",
+    "category": "furniture",
+    "priceCents": 389900,
+    "stock": 11,
+    "images": ["https://placehold.co/800x800/png?text=stil-pysmovyi-kompaktnyi"],
+    "attributes": { "material": "ДСП", "size": "110x55 см", "color": "білий" }
+  },
+  {
+    "name": "Двомісний диван розкладний",
+    "slug": "dyvan-dvomisnyi-rozkladnyi",
+    "description": "Диван, який за хвилину перетворюється на спальне місце. Має місткий ящик для постільної білизни.",
+    "category": "furniture",
+    "priceCents": 1799900,
+    "stock": 2,
+    "images": [
+      "https://placehold.co/800x800/png?text=dyvan-dvomisnyi-rozkladnyi",
+      "https://placehold.co/800x800/png?text=dyvan-dvomisnyi-rozkladnyi-2"
+    ],
+    "attributes": { "material": "тканина і сталевий каркас", "size": "160x90 см", "color": "темно-синій" }
+  },
+  {
+    "name": "Тумба під телевізор",
+    "slug": "tumba-pid-televizor",
+    "description": "Низька тумба з двома дверцятами та відкритою нішею для приставки. Витримує екран до 50 дюймів.",
+    "category": "furniture",
+    "priceCents": 329900,
+    "stock": 13,
+    "images": ["https://placehold.co/800x800/png?text=tumba-pid-televizor"],
+    "attributes": { "material": "ДСП", "size": "140x45 см" }
+  },
+  {
+    "name": "Табурет складаний",
+    "slug": "taburet-skladanyi",
+    "description": "Легкий табурет, який займає мало місця у складеному вигляді. Стане в пригоді на кухні чи балконі.",
+    "category": "furniture",
+    "priceCents": 54900,
+    "stock": 47,
+    "images": ["https://placehold.co/800x800/png?text=taburet-skladanyi"],
+    "attributes": {}
+  },
+  {
+    "name": "Настільна лампа з регулюванням яскравості",
+    "slug": "lampa-nastilna-rehulovana",
+    "description": "Лампа з гнучкою ніжкою та трьома рівнями світла. Зручна для читання чи роботи ввечері.",
+    "category": "lighting",
+    "priceCents": 109900,
+    "stock": 36,
+    "images": ["https://placehold.co/800x800/png?text=lampa-nastilna-rehulovana"],
+    "attributes": { "material": "метал", "color": "чорний" }
+  },
+  {
+    "name": "Підлогова лампа на тринозі",
+    "slug": "lampa-pidlohova-trynoha",
+    "description": "Торшер із тканинним абажуром створює м'яке розсіяне світло. Добре виглядає біля дивана.",
+    "category": "lighting",
+    "priceCents": 219900,
+    "stock": 15,
+    "images": ["https://placehold.co/800x800/png?text=lampa-pidlohova-trynoha"],
+    "attributes": { "material": "дерево і тканина", "size": "150 см", "color": "бежевий" }
+  },
+  {
+    "name": "Підвісний світильник плафон скляний",
+    "slug": "svitylnyk-pidvisnyi-sklianyi",
+    "description": "Світильник зі скляним плафоном підвішується над столом або ліжком. Довжину шнура можна змінювати.",
+    "category": "lighting",
+    "priceCents": 179900,
+    "stock": 20,
+    "images": ["https://placehold.co/800x800/png?text=svitylnyk-pidvisnyi-sklianyi"],
+    "attributes": { "material": "скло і метал", "size": "25 см" }
+  },
+  {
+    "name": "Нічник із датчиком руху",
+    "slug": "nichnyk-z-datchykom-rukhu",
+    "description": "Невеликий світильник вмикається, коли хтось проходить поруч. Працює від батарейок.",
+    "category": "lighting",
+    "priceCents": 24900,
+    "stock": 64,
+    "images": ["https://placehold.co/800x800/png?text=nichnyk-z-datchykom-rukhu"],
+    "attributes": { "material": "пластик", "color": "білий" }
+  },
+  {
+    "name": "Світлодіодна гірлянда 10 м",
+    "slug": "hirlianda-svitlodiodna-10m",
+    "description": "Гірлянда з теплим світлом для кімнати чи балкона. Має кілька режимів мерехтіння.",
+    "category": "lighting",
+    "priceCents": 49900,
+    "stock": 5,
+    "images": ["https://placehold.co/800x800/png?text=hirlianda-svitlodiodna-10m"],
+    "attributes": { "size": "10 м", "color": "теплий білий" }
+  },
+  {
+    "name": "Бра настінне з поворотним плафоном",
+    "slug": "bra-nastinne-povorotne",
+    "description": "Компактне бра для спальні або коридору. Плафон повертається, тож світло можна спрямувати куди потрібно.",
+    "category": "lighting",
+    "priceCents": 94900,
+    "stock": 29,
+    "images": ["https://placehold.co/800x800/png?text=bra-nastinne-povorotne"],
+    "attributes": { "material": "метал", "color": "латунь" }
+  },
+  {
+    "name": "Люстра трирожкова",
+    "slug": "liustra-tryrozhkova",
+    "description": "Стельова люстра з трьома лампами для невеликої кімнати. Простий дизайн поєднується з будь-яким декором.",
+    "category": "lighting",
+    "priceCents": 269900,
+    "stock": 8,
+    "images": ["https://placehold.co/800x800/png?text=liustra-tryrozhkova"],
+    "attributes": {}
+  },
+  {
+    "name": "Органайзер для взуття на 10 пар",
+    "slug": "orhanaizer-vzuttia-10-par",
+    "description": "Компактна стійка, що вміщує до десяти пар взуття. Легко збирається без інструментів.",
+    "category": "storage",
+    "priceCents": 79900,
+    "stock": 33,
+    "images": ["https://placehold.co/800x800/png?text=orhanaizer-vzuttia-10-par"],
+    "attributes": { "material": "метал", "size": "90x30x60 см", "color": "чорний" }
+  },
+  {
+    "name": "Набір контейнерів для зберігання, 3 шт.",
+    "slug": "nabir-konteineriv-zberihannia-3sht",
+    "description": "Три пластикові контейнери з кришками для антресолі чи шафи. Складаються один в один.",
+    "category": "storage",
+    "priceCents": 69900,
+    "stock": 55,
+    "images": ["https://placehold.co/800x800/png?text=nabir-konteineriv-zberihannia-3sht"],
+    "attributes": { "material": "пластик", "size": "10, 20, 30 л", "color": "прозорий" }
+  },
+  {
+    "name": "Кошик плетений для білизни",
+    "slug": "koshyk-pletenyi-dlia-bilyzny",
+    "description": "Містка корзина з кришкою та ручками, зручна для ванної кімнати. Плетіння пропускає повітря.",
+    "category": "storage",
+    "priceCents": 89900,
+    "stock": 24,
+    "images": ["https://placehold.co/800x800/png?text=koshyk-pletenyi-dlia-bilyzny"],
+    "attributes": { "material": "ротанг", "size": "55 л" }
+  },
+  {
+    "name": "Вішак підлоговий для одягу",
+    "slug": "vishak-pidlohovyi-dlia-odiahu",
+    "description": "Стійка з поперечиною та нижньою полицею для взуття. Складається для зберігання.",
+    "category": "storage",
+    "priceCents": 59900,
+    "stock": 42,
+    "images": ["https://placehold.co/800x800/png?text=vishak-pidlohovyi-dlia-odiahu"],
+    "attributes": { "material": "метал", "color": "білий" }
+  },
+  {
+    "name": "Настінна полиця з трьома гачками",
+    "slug": "polytsia-nastinna-z-hachkamy",
+    "description": "Полиця для передпокою, де можна поставити ключі та повісити куртку. Кріплення входить до комплекту.",
+    "category": "storage",
+    "priceCents": 44900,
+    "stock": 60,
+    "images": ["https://placehold.co/800x800/png?text=polytsia-nastinna-z-hachkamy"],
+    "attributes": { "material": "дерево", "size": "60x20 см", "color": "дуб" }
+  },
+  {
+    "name": "Коробка для зберігання з кришкою тканинна",
+    "slug": "korobka-zberihannia-tkanynna",
+    "description": "Складана коробка для іграшок чи сезонного одягу. Тканина дихає, а міцні краї тримають форму.",
+    "category": "storage",
+    "priceCents": 34900,
+    "stock": 72,
+    "images": ["https://placehold.co/800x800/png?text=korobka-zberihannia-tkanynna"],
+    "attributes": { "material": "тканина", "color": "сірий" }
+  },
+  {
+    "name": "Етажерка кутова чотириярусна",
+    "slug": "etazherka-kutova-4-yarusy",
+    "description": "Кутова стійка для ванної чи кухні, що економить місце. Кожна полиця витримує до п'яти кілограмів.",
+    "category": "storage",
+    "priceCents": 114900,
+    "stock": 10,
+    "images": ["https://placehold.co/800x800/png?text=etazherka-kutova-4-yarusy"],
+    "attributes": {}
+  }
+]
