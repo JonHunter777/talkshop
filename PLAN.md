@@ -1,6 +1,6 @@
 PLAN.md — AI-магазин
 Чек-лист этапов. Оркестратор читает этот файл в начале каждой сессии, отмечает выполненное - [x] и пишет короткий итог в «Журнал».
-Текущий этап: 1 (план утверждён 2026-11-16, исполнение не начато; шаг 1 требует отдельного «ок» на установку пакетов)
+Текущий этап: 1 (Backend-основа), шаги 1–9 выполнены, следующий — шаг 10 (сквозной e2e)
 Этап 0. Подготовка
 [x] Монорепо: папки backend/ (NestJS) и frontend/ (Vite + React + TS + Tailwind)
 [x] ESLint + Prettier в обеих частях
@@ -36,7 +36,7 @@ PLAN.md — AI-магазин
 - Картинки — только URL строками (внешние ссылки на сайты не проверяются и не скачиваются; загрузки файлов нет).
 - Тексты товаров (названия, описания, материалы) пишутся своими словами, не копируются с JYSK и других магазинов. Цены — в копейках; несколько товаров с малым остатком для тестов.
 - 30–50 товаров в категориях `kitchen`, `textile`, `decor`, `furniture`, `lighting`, `storage`. Идемпотентность: upsert по `slug`, остаток и пароли при повторном запуске не перезаписываются (`$setOnInsert`).
-- Открытый вопрос до шага 9: на каком языке тексты товаров (uk/ru/en) — связано с решением по языку интерфейса из «Долгов».
+- Язык текстов товаров — решено: uk (см. «Долги», решение по языку).
 
 **Структура** (`backend/src/`)
 - `common/`: `constants/` (роли, `CURRENCY`, лимиты), `decorators/` (`@CurrentUser`, `@Roles`, `@Auth`), `guards/` (`JwtAuthGuard`, `RolesGuard`), `pipes/` (`ParseObjectIdPipe`), `dto/` (пагинация), `types/`, `utils/` (`isDuplicateKeyError`).
@@ -87,10 +87,10 @@ PLAN.md — AI-магазин
   - [x] 8a-2 — `PATCH /orders/:id/status` (допустимые переходы по таблице выше, `cancelled` → 400), чистая функция `canTransition` с тестом на всю матрицу; **`POST /orders/:id/cancel`** (admin): смена статуса с условием `pending`/`processing` и возврат остатков по снапшоту в одной транзакции, удалённый товар пропускается с `warn` в лог, повторная отмена → 409; `ProductsService.incrementStock(productId, qty, session)`; рефакторинг `placeOrder` → `reserveLines`. Коммит: `feat(backend): add order status transitions and cancel`.
   - [x] 8b — CORS по списку (`CORS_ORIGIN` через запятую, валидация в схеме env, `.env.example`), общая `configureApp(app)` для `main.ts` и тестов, helmet (`helmet@8.3.0`). Сделано: `parseCorsOrigins` (без `*`, пустых и дублей, origin без пути, в production только https кроме `localhost`, хост с точкой на конце и пробельные символы внутри — ошибка); `buildHelmetOptions(nodeEnv)` (вне production отключён только CSP) и `buildCorsOptions(origins)` (`credentials: false`, методы GET/POST/PATCH/DELETE, заголовки Authorization и Content-Type, `maxAge` 600) — чистые функции, тестируются на мини-приложении Nest. Коммит: `feat(backend): add cors origin list and helmet`.
   - [x] 8c — `npm audit` (backend и frontend). Backend: 27 moderate только в dev-зависимостях, production 0, не трогали. Frontend: 9 moderate (цепочка eslint, `minimatch`) исправлены `npm audit fix` (без `--force`), теперь 0; транзитивный `minimatch` 10 → 11, lint, build и test зелёные.
-- [ ] 9 — сид: `src/seed/data/*.json`, `seed-guard.ts`, `run-seed.ts`, `seed.ts`, скрипт `seed` (`nest build && node dist/seed/seed.js`), seed-переменные в `.env.example`. Агент: `db-specialist`. Коммит: `feat(backend): add idempotent seed script`.
+- [x] 9 — сид: `src/seed/data/*.json`, `seed-guard.ts`, `run-seed.ts`, `seed.ts`, скрипт `seed` (`nest build && node dist/seed/seed.js`), seed-переменные в `.env.example`. Агент: `db-specialist`. Коммит: `feat(backend): add idempotent seed script`. Проверено вручную на Atlas: отказы (`NODE_ENV=production`, неверная база, пароль короче 8 символов) дают код 1 без секретов в выводе; первый прогон — 42 товара и 2 пользователя created, второй — 0 created / 42 updated / 2 skipped; в Swagger `GET /api/products` даёт total 42, вход admin и demo (role `customer`) работает, `GET /orders/all` — 200 для admin и 403 для demo. Остатки: 5 товаров с остатком 0/1/2/3/5 для граничных случаев, остальные 8–80.
 - [ ] 10 — сквозной e2e (регистрация → логин → каталог → корзина → checkout → мои заказы → админ меняет статус), полнота Swagger (все пути, схема `bearer`), ручной прогон в `/api/docs`. Агенты: `test-writer`, затем разработчик. Коммит: `test(backend): add full shop flow e2e and swagger coverage`.
 - [ ] 11 — `code-reviewer` по всему diff (🔴 и 🟡 исправить), затем обязательный `security-auditor` (затронуты `auth/` и `orders/`). Коммит при правках: `fix(backend): ...`.
-- [ ] 12 — документация (`docs-writer`): `backend/README.md` (эндпоинты, сид, env, тесты), отметки в `PLAN.md`, примеры «€» → гривны в `PLAN.md` и `db-specialist.md`. Коммит: `docs: stage 1 done`.
+- [ ] 12 — документация (`docs-writer`): `backend/README.md` (эндпоинты, сид, env, тесты; сид: как заполнить `SEED_*` в `.env` — пароль минимум 8 символов — и что `npm run seed` сам запускает `nest build`), отметки в `PLAN.md`, примеры «€» → гривны в `PLAN.md` и `db-specialist.md`. Коммит: `docs: stage 1 done`.
 
 **Ключевые тесты**
 - Общие: `env.validation` (короткий `JWT_SECRET` → ошибка без значения в тексте, TTL вне диапазона), `ParseObjectIdPipe` (строго 24 hex), пагинация (`page=0`, `limit=51` → 400), guards (нет заголовка, чужая подпись, просроченный токен, другой алгоритм → 401; customer на admin-маршруте → 403).
@@ -190,7 +190,8 @@ PLAN.md — AI-магазин
 - Text-поиск без морфологии (`tablecloth` не находит `Tablecloths`) — решить к AI-этапу.
 - CORS `exposedHeaders`: фронт не прочитает `Retry-After` и `X-RateLimit-*` из ответа 429; добавить `exposedHeaders: ['Retry-After']`, если захотим показывать «повторите через N секунд» — этап 2.
 - `npm audit` backend: 27 moderate только в dev-зависимостях (`minimatch` и `glob` через eslint и Jest), production 0. Исправление npm предлагает через `@nestjs/cli` 12 (semver-major): отдельное решение, без `--force`. Перепроверить на шаге 11. Frontend после `npm audit fix`: 0 уязвимостей.
-- Решение по языку интерфейса (uk/en) — до этапа 2.
+- Язык — решено: сейчас только uk; en — отдельный этап после MVP; i18n (react-i18next, `uk.json`) — в этапе 2.
+- Ошибка разбора JSON (body-parser) возвращает клиенту фрагмент тела запроса в `message`: заменить на общий текст «Invalid JSON body». Low/Medium, шаг 11 (`security-auditor`).
 - mongoose 8.x (`^8.24.9`, драйвер mongodb 6.20) вместо 9 из-за бага драйвера mongodb >=7.6 в Jest (NODE-7832: динамический `import('os')` в CommonJS-Jest даёт пустые метаданные handshake и ошибку «Missing required sub-document 'driver'»). Пин `mongoose@9.9.0` не подошёл: `npm audit` показывает для mongoose 9.0.0–9.11.3 критическую уязвимость (sanitizeFilter, prototype pollution). Вернуться на mongoose 9 (последнюю безопасную версию) после выхода исправления драйвера.
 - TanStack Query вместо `useState` + `fetch` в `useApiHealth` — этап 2.
 - helmet ставит `Cross-Origin-Resource-Policy: same-origin`: если API начнёт отдавать картинки для `<img>` на другом домене, для этих маршрутов нужен `crossOriginResourcePolicy: 'cross-origin'`.
